@@ -34,6 +34,10 @@ If issues persist after updating, open a GitHub issue at https://github.com/ligh
 - The script or MCP tool call that reproduces the issue
 - The target URL and expected vs actual results
 
+## Security: block private networks for agent-driven use
+
+Lightpanda executes page JavaScript, so a malicious page reached via an agent-supplied URL (search-result link, redirect, JS-driven `fetch`, etc.) can issue requests to `localhost`, RFC1918 ranges, and cloud-metadata endpoints (e.g. `169.254.169.254`). When using Lightpanda for untrusted browsing — web search, link-following, arbitrary page automation — always pass `--block-private-networks` so the kernel-level IP filter rejects those requests after DNS resolution, regardless of what triggered them. The MCP/CLI/CDP examples below include the flag; drop it only when you intentionally need to reach a private host (e.g. scraping your own dev server). For finer control, combine with `--block-cidrs` to mix block + allow rules — e.g. `--block-cidrs 10.0.0.0/8,-10.0.0.42/32` blocks all of 10/8 except for 10.0.0.42 (the `-` prefix on a CIDR means "exempt from blocking").
+
 ## When to Use What
 
 Lightpanda offers three interfaces. Choose based on your needs:
@@ -51,7 +55,7 @@ The MCP server is the simplest way for agents to use Lightpanda. It exposes purp
 ### Setup for Claude Code
 
 ```bash
-claude mcp add lightpanda -- $HOME/.local/bin/lightpanda mcp
+claude mcp add lightpanda -- $HOME/.local/bin/lightpanda mcp --block-private-networks
 ```
 
 ### Setup for other MCP clients
@@ -63,7 +67,7 @@ Add to your MCP client configuration:
   "mcpServers": {
     "lightpanda": {
       "command": "$HOME/.local/bin/lightpanda",
-      "args": ["mcp"]
+      "args": ["mcp", "--block-private-networks"]
     }
   }
 }
@@ -111,7 +115,7 @@ A typical agent workflow:
 For one-off page extraction without starting a server:
 
 ```bash
-$HOME/.local/bin/lightpanda fetch --dump markdown --wait-until networkidle https://example.com
+$HOME/.local/bin/lightpanda fetch --block-private-networks --dump markdown --wait-until networkidle https://example.com
 ```
 
 ### Options
@@ -122,22 +126,26 @@ $HOME/.local/bin/lightpanda fetch --dump markdown --wait-until networkidle https
 - `--strip-mode` — Remove tag groups from output: `js`, `css`, `ui`, `full` (comma-separated)
 - `--with-frames` — Include iframe contents in the dump
 - `--obey-robots` — Fetch and obey robots.txt
+- `--block-private-networks` — Drop requests to private/internal IPs (recommended for untrusted URLs; see [Security](#security-block-private-networks-for-agent-driven-use))
+- `--block-cidrs CIDR[,CIDR...]` — Block (or, with `-` prefix, allow) specific CIDR ranges; combinable with the flag above
 
 ### Examples
 
+All examples below keep `--block-private-networks` on by default — see [Security](#security-block-private-networks-for-agent-driven-use). Drop it only when you're intentionally targeting a private host you control.
+
 Extract page as markdown:
 ```bash
-$HOME/.local/bin/lightpanda fetch --dump markdown https://example.com
+$HOME/.local/bin/lightpanda fetch --block-private-networks --dump markdown https://example.com
 ```
 
 Extract semantic tree (compact, AI-friendly):
 ```bash
-$HOME/.local/bin/lightpanda fetch --dump semantic_tree_text --wait-until networkidle https://example.com
+$HOME/.local/bin/lightpanda fetch --block-private-networks --dump semantic_tree_text --wait-until networkidle https://example.com
 ```
 
 Fetch with longer wait for slow pages:
 ```bash
-$HOME/.local/bin/lightpanda fetch --dump html --wait-ms 10000 --wait-until networkidle https://example.com
+$HOME/.local/bin/lightpanda fetch --block-private-networks --dump html --wait-ms 10000 --wait-until networkidle https://example.com
 ```
 
 ## CDP Server — Advanced Automation
@@ -146,13 +154,16 @@ For full browser control via Playwright or Puppeteer:
 
 ### Start the Browser Server
 ```bash
-$HOME/.local/bin/lightpanda serve --host 127.0.0.1 --port 9222
+$HOME/.local/bin/lightpanda serve --host 127.0.0.1 --port 9222 --block-private-networks
 ```
+
+The canonical command keeps `--block-private-networks` on — see [Security](#security-block-private-networks-for-agent-driven-use). CDP is one of the documented automation paths, and a Playwright/Puppeteer client driving the browser at agent-supplied URLs has the same SSRF surface as MCP/CLI flows. Drop the flag only when you're driving the browser at private hosts you control (your own dev server, staging behind a VPN).
 
 Options:
 - `--log-level info|debug|warn|error` — Set logging verbosity
 - `--log-format pretty|logfmt` — Output format for logs
 - `--obey-robots` — Fetch and obey robots.txt
+- `--block-private-networks` — Drop page-initiated requests to private/internal IPs. Kept on in the canonical command above; omit only when driving the browser at your own internal targets.
 
 ### Using with playwright-core
 
