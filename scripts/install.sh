@@ -132,4 +132,4 @@ fi
 echo ""
 echo "=== Setup Complete ==="
 echo "Binary location: $INSTALL_DIR/$BINARY_NAME"
-echo "Run with: lightpanda serve --host 127.0.0.1 --port 9222"
+echo "Run with: lightpanda serve --host 127.0.0.1 --port 9222 --block-private-networks"
