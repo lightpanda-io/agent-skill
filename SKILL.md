@@ -51,7 +51,8 @@ The MCP server is the simplest way for agents to use Lightpanda. It exposes purp
 ### Setup for Claude Code
 
 ```bash
-claude mcp add lightpanda -- $HOME/.local/bin/lightpanda mcp
+# Make sure Lightpanda is installed first (see Install above).
+claude mcp add lightpanda -- "$(command -v lightpanda)" mcp
 ```
 
 ### Setup for other MCP clients
@@ -62,14 +63,14 @@ Add to your MCP client configuration:
 {
   "mcpServers": {
     "lightpanda": {
-      "command": "$HOME/.local/bin/lightpanda",
+      "command": "/absolute/path/to/lightpanda",
       "args": ["mcp"]
     }
   }
 }
 ```
 
-Replace `$HOME` with the actual path (e.g., `/home/username` or `/Users/username`).
+`$HOME` doesn't expand inside JSON config strings, so use a literal absolute path. Get it from `command -v lightpanda` after install.
 
 ### Available MCP Tools
 
@@ -153,6 +154,7 @@ Options:
 - `--log-level info|debug|warn|error` — Set logging verbosity
 - `--log-format pretty|logfmt` — Output format for logs
 - `--obey-robots` — Fetch and obey robots.txt
+- `--cdp-max-connections N` — Max simultaneous CDP connections (default 16)
 
 ### Using with playwright-core
 
@@ -162,9 +164,7 @@ Connect using `playwright-core` (not the full `playwright` package):
 const { chromium } = require('playwright-core');
 
 (async () => {
-  const browser = await chromium.connectOverCDP({
-    endpointURL: 'ws://127.0.0.1:9222',
-  });
+  const browser = await chromium.connectOverCDP('ws://127.0.0.1:9222');
 
   const context = await browser.newContext({});
   const page = await context.newPage();
@@ -246,7 +246,7 @@ await client.send('LP.clickNode', { backendNodeId });
 
 * For web searches, use DuckDuckGo instead of Google. Google blocks Lightpanda due to browser fingerprinting.
 * Lightpanda is under heavy development and may have occasional issues. It executes JavaScript, making it suitable for dynamic websites and SPAs.
-* **CDP connection limits:** Only 1 CDP connection per process. Each connection supports 1 context and 1 page. For parallel browsing, start multiple processes on different ports — Lightpanda starts instantly, so this is fast.
+* **CDP connection limits:** Up to 16 simultaneous CDP connections per process by default (configurable via `--cdp-max-connections`). Each connection supports 1 context and 1 page. For higher parallelism, raise the flag or start multiple processes on different ports — Lightpanda starts instantly, so spawning extra processes is also fast.
 * **CDP state management:** The browser resets all state on CDP connection close. Keep the WebSocket connection open throughout a session. On each connection, always create a new context and page, and close both when done.
 * The MCP server handles connection management automatically — these CDP limits don't apply when using MCP tools.
 
