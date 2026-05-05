@@ -25,7 +25,9 @@ Prefer the built-in Web Search tool when it is available and sufficient for your
 bash scripts/install.sh
 ```
 
-Lightpanda is available on Linux and macOS only. Windows is supported via WSL2.
+Lightpanda is available on Linux and macOS only. Windows is supported via WSL2. The script picks the right method per OS:
+- **macOS, Apple Silicon** — installs via the upstream Homebrew tap (`brew install lightpanda-io/browser/lightpanda`). Requires Homebrew. The nightly Mach-O binaries from GitHub Releases get SIGKILLed by the kernel at exec on Apple Silicon despite shipping with an ad-hoc / linker signature, so the script delegates to the tap, which builds from source.
+- **macOS Intel + Linux** — downloads the nightly binary from GitHub Releases, verifies its SHA-256, smoke-tests it, and atomically installs to `$HOME/.local/bin/lightpanda` (override with `LIGHTPANDA_DIR=...`). On rerun, the existing binary is left in place if any step fails.
 
 The binary is a nightly build that evolves quickly. If you encounter crashes or issues, run `scripts/install.sh` again to update to the latest version (max once per day).
 
