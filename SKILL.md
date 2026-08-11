@@ -33,7 +33,9 @@ Check first whether Lightpanda is already installed (`command -v lightpanda`) be
   `${CLAUDE_SKILL_DIR}` is a Claude Code substitution that resolves to this skill's own directory regardless of the shell's current working directory — needed because when this skill runs as a plugin, the shell's cwd is your project, not the skill's install location.
 - **Any other agent runtime** (Cursor, Codex CLI, Gemini CLI, etc.): this substitution isn't supported. `scripts/install.sh` is bundled directly next to this file — locate it there and run it with that path instead, e.g. `bash /path/to/this/skill/scripts/install.sh`.
 
-Lightpanda is available on Linux and macOS only. Windows is supported via WSL2.
+Lightpanda is available on Linux and macOS only. Windows is supported via WSL2. The script picks the right method per OS:
+- **macOS, Apple Silicon** — installs via the upstream Homebrew tap (`brew install lightpanda-io/browser/lightpanda`). Requires Homebrew. The nightly Mach-O binaries from GitHub Releases get SIGKILLed by the kernel at exec on Apple Silicon despite shipping with an ad-hoc / linker signature, so the script delegates to the tap, which builds from source.
+- **macOS Intel + Linux** — downloads the nightly binary from GitHub Releases, verifies its SHA-256, smoke-tests it, and atomically installs to `$HOME/.local/bin/lightpanda` (override with `LIGHTPANDA_DIR=...`). On rerun, the existing binary is left in place if any step fails.
 
 Prefer a package manager? See [package manager installs](https://lightpanda.io/docs/run-locally/installation/package-managers):
 - **Homebrew** (macOS/Linux): `brew install lightpanda-io/browser/lightpanda`
