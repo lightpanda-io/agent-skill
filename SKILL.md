@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: "Linux and macOS only (Windows via WSL2). Installs its own binary via scripts/install.sh — not run automatically by the plugin installer, so run it once before first use."
 allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/install.sh), Bash(command -v lightpanda), Bash(lightpanda *)
 metadata:
-  version: "2.1.1"
+  version: "2.1.2"
   author: Lightpanda
   source: "https://github.com/lightpanda-io/agent-skill"
   homepage: "https://github.com/lightpanda-io/agent-skill"
@@ -99,6 +99,7 @@ Where both `selector` and `backendNodeId` are accepted, either locates the targe
 **Reading the page** (all accept an optional `url` to navigate first):
 - `markdown` — Get page content, or a subtree, as markdown
 - `html` — Raw HTML for the document, or a single node's outerHTML when scoped
+- `screenshot` — Render the page, or one node, as a PNG (the text layout Lightpanda computes, not a pixel-accurate rendering)
 - `tree` — Simplified semantic DOM tree optimized for AI reasoning: role, name, value, and `backendNodeId` per node (supports `backendNodeId` filter and `maxDepth` limit)
 - `links` — Extract all links as text, resolved href, and `backendNodeId`
 - `nodeDetails` — Tag, role, name, attributes, and state for a node by `backendNodeId`, plus a ready-to-use CSS selector
@@ -167,12 +168,12 @@ lightpanda fetch --dump markdown --wait-until networkidle https://example.com
 
 ### Options
 
-- `--dump` — Output format: `html`, `markdown`, `semantic_tree`, `semantic_tree_text` (the MCP equivalent of `semantic_tree*` is named `tree`)
+- `--dump` — Output format: `html`, `markdown`, `png`, `pdf`, `semantic_tree`, `semantic_tree_text` (the MCP equivalent of `semantic_tree*` is named `tree`)
 - `--wait-until` — Wait strategy: `load`, `domcontentloaded`, `networkalmostidle`, `networkidle`, `done` (default)
 - `--wait-ms` — Max wait time in milliseconds (default: 5000)
 - `--wait-selector` — Wait for a CSS selector to appear, checked after `--wait-until`
 - `--wait-script` — Wait for a JS expression to return truthy, checked after `--wait-until`
-- `--strip-mode` — Remove tag groups from output: `js`, `css`, `ui`, `invisible`, `full` (comma-separated)
+- `--strip-mode` — Remove tag groups from output: `js`, `css`, `ui`, `invisible`, `shell`, `clutter` (comma-separated)
 - `--with-frames` — Include iframe contents in the dump
 - `--json` — Print fetch status as JSON instead of/alongside the dump; required when fetching multiple URLs
 - `--inject-script` / `--inject-script-file` — JavaScript to run as the document's `<head>` is parsed, before any page script runs. Repeatable; runs in CLI order
@@ -263,7 +264,8 @@ Everything else (`page.title()`, `page.close()`, `context.close()`, `browser.clo
 Lightpanda exposes a custom `LP` domain via CDP with agent-optimized methods not available in standard Chrome DevTools Protocol. Use these via `page.evaluate` with CDP sessions or direct WebSocket messages.
 
 **Content extraction:**
-- `LP.getMarkdown` — Extract page content as markdown. Params: `nodeId` (optional)
+- `LP.dump` — Render the page, or a subtree, to `html`, `markdown`, `png`, or `pdf`. Params: `format` (required), `strip`, `selector`, `backendNodeId`, `maxBytes` (text formats only)
+- `LP.getMarkdown` — **Deprecated**, equivalent to `LP.dump` with `format: "markdown"`. Params: `nodeId` (optional)
 - `LP.getSemanticTree` — Get semantic tree representation. Params: `format` (`text` for text format), `prune` (default: true), `interactiveOnly`, `backendNodeId`, `maxDepth`
 - `LP.getStructuredData` — Extract structured data (JSON-LD, OpenGraph, etc.)
 
@@ -281,8 +283,8 @@ Lightpanda exposes a custom `LP` domain via CDP with agent-optimized methods not
 **Debugging & configuration:**
 - `LP.getContentSignal` — Read the current host's advisory `Content-Signal` robots.txt preferences ([contentsignals.org](https://contentsignals.org)). `available` is false unless `--obey-robots` populated the store.
 - `LP.handleJavaScriptDialog` — Pre-arm the response (`accept`, optional `promptText`) for the *next* `window.alert`/`confirm`/`prompt`. Lightpanda auto-dismisses dialogs headlessly, so this must be sent *before* the JS that opens the dialog, not reactively like standard CDP's `Page.handleJavaScriptDialog`.
-- `LP.configureCDP` — Toggle CDP compatibility behaviors. Params: `disableSetCacheDisabled`
-- `LP.configureLoading` — Toggle iframe, worker, and external-stylesheet loading per session. Params: `subFrame`, `worker`, `externalStylesheets` (each optional)
+- `LP.configureCDP` — Toggle CDP compatibility behaviors. Params: `disableSetCacheDisabled`, `obeyRobots`, `httpVersion` (`auto`/`1.1`) (each optional)
+- `LP.configureLoading` — Toggle iframe, worker, external-stylesheet, and image loading per session. Params: `subFrame`, `worker`, `externalStylesheets`, `images` (each optional)
 - `LP.version` — Return the running Lightpanda version
 
 **Example using CDP session with Playwright:**
