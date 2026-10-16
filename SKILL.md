@@ -339,7 +339,7 @@ Hosted Lightpanda, no local binary: use it when the agent can't install software
 
 See [getting started](https://lightpanda.io/docs/run-on-lightpanda-cloud/getting-started).
 
-## Saved Scripts (PandaScript)
+## Agent Mode and Saved Scripts (PandaScript)
 
 A PandaScript is a plain JavaScript automation script that Lightpanda runs directly — no LLM call, deterministic, token-free. It's the right tool once you've figured out a task once and want to repeat it exactly, e.g. on a schedule.
 
@@ -347,6 +347,8 @@ Three ways to produce one:
 - **Mid-session, via MCP:** call the `save` tool with a `path` and a synthesized `script` — see the tool's own description for the script-writing rules.
 - **One-shot, via CLI:** `lightpanda agent --task "..." --save script.js` synthesizes a script from a natural-language task instead of printing the answer.
 - **Interactively:** `lightpanda agent` starts a REPL; drive the browser with natural language or slash commands (every MCP tool is also callable as `/toolName key=value`, e.g. `/goto url=https://example.com`), then `/save script.js`.
+
+Agent mode needs an LLM API key in the environment (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, ...; `lightpanda help agent` lists them) or a local Ollama or llama.cpp server. Without one, `--task` prints "No API key detected." and exits with code 1, and the bare REPL falls back to slash commands only (`--no-llm` forces that).
 
 Replay with no LLM involved:
 
