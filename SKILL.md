@@ -372,8 +372,9 @@ Accepted by every command (`fetch`, `serve`, `mcp`, `agent`, `run`), not only wh
 
 **Efficiency:**
 - `--http-cache-dir <path>`: directory used as a filesystem cache for network resources (RFC 9111 revalidation). Omitting it disables caching.
-- `--adblock-lists <file>`: EasyList-syntax filter files; requests to a blocked hostname fail before they leave. Repeatable.
+- `--adblock-lists <file>`: EasyList-syntax filter files; blocked requests fail before they leave, matched on URL, resource type, party and `$domain=`. Repeatable.
 - `--block-urls "<pattern>"`: block URLs matching a case-insensitive `*`-wildcard pattern. Repeatable.
+- `--load-resources <type>`: sub-resources to actually request (`iframe`, `image`, `stylesheet`, `worker`; `none` requests none). Repeatable. Nothing is requested by default, except that `mcp` and `agent` load external stylesheets so visibility checks see the CSS; passing the flag replaces that default.
 
 **Security:** `--block-private-networks`: block HTTP requests to private/internal IP addresses after DNS resolution. Defaults to false.
 
@@ -416,7 +417,7 @@ A user-agent string is only a claim that anything can send. Web Bot Auth (the `-
 - Prefer a bulk source: `git clone` over walking a web git forge, a documented API over its UI, `sitemap.xml` over link discovery.
 - Cap how deep you follow links and how many URLs you keep per domain. Stay out of infinite URL spaces (calendars, arbitrary diffs, faceted search); a run that wanders in never terminates and looks like an attack while it does.
 - Set `--http-cache-dir` for anything that runs more than once; unchanged resources then cost only a revalidation.
-- Cut trackers and ads with `--adblock-lists` / `--block-urls`. Sub-resources and external stylesheets aren't fetched by default (agent mode with an LLM is the exception: it loads stylesheets for visibility checks).
+- Cut trackers and ads with `--adblock-lists` / `--block-urls`. Sub-resources aren't fetched by default (`--load-resources` opts in; `mcp` and `agent` load external stylesheets, which `--load-resources none` turns off).
 - Use the `search` tool instead of navigating a search-results page.
 
 **Give every task its own browser.** A fresh instance carries no leftover cookies or state, and scoping caps the blast radius of a prompt injection from untrusted page content. Add `--block-private-networks` whenever you follow links a page handed you rather than links you chose. CDP: a new browser or context per task. MCP: stdio mode is one browser for the whole session, so use HTTP mode (`--port`) when you need a browser per task.
