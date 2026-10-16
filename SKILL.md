@@ -36,7 +36,7 @@ Check first whether Lightpanda is already installed (`command -v lightpanda`) be
 Lightpanda is available on Linux and macOS only. Windows is supported via WSL2.
 
 Prefer a package manager? See [package manager installs](https://lightpanda.io/docs/run-locally/installation/package-managers):
-- **Homebrew** (macOS/Linux): `brew install lightpanda-io/browser/lightpanda`
+- **Homebrew** (macOS/Linux): `brew install lightpanda-io/browser/lightpanda` (or `lightpanda-io/browser/lightpanda-nightly` to track nightly)
 - **AUR** (Arch Linux): `yay -S lightpanda-bin` (or `lightpanda-nightly-bin` to track nightly)
 - **Debian/Ubuntu** (0.3.0+): `.deb` package from each [tagged release](https://github.com/lightpanda-io/browser/releases)
 
