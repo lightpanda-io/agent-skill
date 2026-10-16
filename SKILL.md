@@ -376,6 +376,10 @@ Accepted by every command (`fetch`, `serve`, `mcp`, `agent`, `run`), not only wh
 - `--block-urls "<pattern>"`: block URLs matching a case-insensitive `*`-wildcard pattern. Repeatable.
 - `--load-resources <type>`: sub-resources to actually request (`iframe`, `image`, `stylesheet`, `worker`; `none` requests none). Repeatable. Nothing is requested by default, except that `mcp` and `agent` load external stylesheets so visibility checks see the CSS; passing the flag replaces that default.
 
+**State:**
+- `--cookie <file>`: load cookies at startup, from a JSON array in the CDP/Puppeteer format or a Netscape `cookies.txt` (`serve`, `fetch` and `mcp`).
+- `--cookie-jar <file>`: write the cookies to a JSON file on exit (`fetch` and `mcp`). `agent` ignores both flags.
+
 **Security:** `--block-private-networks`: block HTTP requests to private/internal IP addresses after DNS resolution. Defaults to false.
 
 When and why to use each, see Best Practices below.
