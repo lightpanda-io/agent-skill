@@ -197,6 +197,8 @@ lightpanda fetch --dump markdown --wait-until networkidle https://example.com
 - `--wait-script` — Wait for a JS expression to return truthy, checked after `--wait-until`
 - `--strip-mode` — Remove tag groups from output: `js`, `css`, `ui`, `invisible`, `shell`, `clutter` (comma-separated)
 - `--with-frames` — Include iframe contents in the dump
+- `--dump-selector`: Dump only the first element matching a CSS selector; fails if nothing matches
+- `--dump-max-bytes`: Soft cap on the dumped `html` or `markdown`; a `[truncated]` marker is appended
 - `--json` — Print fetch status as JSON instead of/alongside the dump; required when fetching multiple URLs
 - `--inject-script` / `--inject-script-file` — JavaScript to run as the document's `<head>` is parsed, before any page script runs. Repeatable; runs in CLI order
 - `--terminate-ms` — Hard deadline in milliseconds; forcibly terminates JS execution after this time (unlike `--wait-ms`, which only stops waiting)
