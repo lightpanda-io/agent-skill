@@ -143,7 +143,7 @@ A `url` already loaded (current or originally requested) is read without reloadi
 - `setChecked` — Check or uncheck a checkbox or radio button
 
 **Waiting:**
-- `waitForSelector` — Wait for a CSS selector to match (default timeout: 5000ms)
+- `waitForSelector` — Wait for a CSS selector to match
 - `waitForScript` — Wait until a JS expression returns truthy, re-checked each tick
 - `waitForState` — Wait for a load state (`load`, `domcontentloaded`, `networkalmostidle`, `networkidle`, `done`) with no navigation
 
@@ -190,7 +190,7 @@ lightpanda fetch --dump markdown --wait-until networkidle https://example.com
 ### Options
 
 - `--dump` — Output format: `html`, `markdown`, `png`, `pdf`, `semantic_tree`, `semantic_tree_text` (the MCP equivalent of `semantic_tree*` is named `tree`)
-- `--wait-until` — Wait strategy: `load`, `domcontentloaded`, `networkalmostidle`, `networkidle`, `done` (default)
+- `--wait-until` — Wait strategy: `load` (default; none when `--wait-selector` or `--wait-script` is set), `domcontentloaded`, `networkalmostidle`, `networkidle`, `done`
 - `--wait-ms` — Max wait time in milliseconds (default: 5000)
 - `--wait-selector` — Wait for a CSS selector to appear, checked after `--wait-until`
 - `--wait-script` — Wait for a JS expression to return truthy, checked after `--wait-until`
@@ -294,7 +294,7 @@ Lightpanda exposes a custom `LP` domain via CDP with agent-optimized methods not
 - `LP.getInteractiveElements` — Find all interactive elements. Params: `nodeId` (optional)
 - `LP.detectForms` — Detect and extract form information
 - `LP.getNodeDetails` — Get detailed info about a node. Params: `backendNodeId` (required)
-- `LP.waitForSelector` — Wait for a CSS selector match. Params: `selector` (required), `timeout` (default: 5000ms)
+- `LP.waitForSelector` — Wait for a CSS selector match. Params: `selector` (required), `timeout` (default: 5000 ms, or 15000 ms before the page reaches `load`)
 
 **Actions:**
 - `LP.clickNode` — Click a node. Params: `nodeId` or `backendNodeId`
