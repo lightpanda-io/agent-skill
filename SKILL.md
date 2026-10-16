@@ -132,7 +132,7 @@ Where both `selector` and `backendNodeId` are accepted, either locates the targe
 - `extract` — Extract structured data using a schema mapping output field names to CSS-selector specs
 - `evaluate` — Execute JavaScript in the page context; a bare trailing expression yields its value, and top-level `await`/`return` are supported
 
-**Interacting with the page** (return page URL and title after each action):
+**Interacting with the page** (each returns the page URL, HTTP status and title; an action that opens a new window, e.g. a `target=_blank` click, adds "Opened a new window; tools now act on it."):
 - `click` — Click an interactive element
 - `fill` — Fill text into an input, textarea, or select element
 - `scroll` — Scroll the page or a specific element
@@ -379,7 +379,13 @@ When and why to use each, see Best Practices below.
 
 * For web searches, use the `search` tool instead of Google. Google blocks Lightpanda due to browser fingerprinting.
 * Lightpanda is under heavy development and may have occasional issues. It executes JavaScript, making it suitable for dynamic websites and SPAs.
-* **Be careful trusting `goto`'s response.** It reports failure directly for DNS and connection errors (e.g. `CouldntResolveHost`), so that part is reliable. Two other cases still look like success. A timeout returns "Navigation started but the page did not finish loading before the timeout." instead of failing. An HTTP error page (404, 500) is a real response, so `goto` reports it as a successful navigation to that page. Check the content with a follow-up read when the response status matters.
+* **Check the status in `goto`'s response.** A navigation can succeed without loading the requested content:
+  - `Navigated. HTTP <status>.` (e.g. `Navigated. HTTP 200 OK.`): the page loaded.
+  - "HTTP <status>: this is likely an error or rate-limit page, not the requested content.": the server answered with a 4xx or 5xx page (MCP only).
+  - "Blocked by a <kind> bot challenge (HTTP <status>): this is not the requested content.": a bot challenge page (MCP only).
+  - "Navigation started (HTTP <status>) but the page did not finish loading before the timeout.": the server answered but the page didn't finish loading; it may still be usable.
+
+  `goto` fails only when no page arrived: a DNS or connection error (e.g. `CouldntResolveHost`), or `NavigationTimeout: no response arrived before the timeout, so the page is empty.`
 * **CDP connection limits:** Up to 16 simultaneous CDP connections per process by default (tune with `--cdp-max-connections`). Each connection supports 1 context and 1 page. For more parallelism than that, start multiple processes on different ports — Lightpanda starts instantly, so this is fast.
 * **CDP state management:** The browser resets all state on CDP connection close. Keep the WebSocket connection open throughout a session. On each connection, always create a new context and page, and close both when done.
 * The MCP server handles connection management automatically — these CDP limits don't apply when using MCP tools.
