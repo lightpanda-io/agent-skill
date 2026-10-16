@@ -163,6 +163,7 @@ A `url` already loaded (current or originally requested) is read without reloadi
 
 - `mcp://page/html` — Full serialized HTML of the current page
 - `mcp://page/markdown` — Token-efficient markdown representation of the current page (same content as the `markdown` tool)
+- `mcp://skill/pandascript`: the PandaScript skill documentation (no page needed)
 
 ### Multiple sessions (HTTP transport)
 
