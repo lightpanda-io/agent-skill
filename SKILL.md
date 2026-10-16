@@ -316,7 +316,7 @@ Lightpanda exposes a custom `LP` domain via CDP with agent-optimized methods not
 const client = await context.newCDPSession(page);
 
 // Get page as markdown
-const { markdown } = await client.send('LP.getMarkdown');
+const { content } = await client.send('LP.dump', { format: 'markdown' });
 
 // Get semantic tree
 const { semanticTree } = await client.send('LP.getSemanticTree', { format: 'text', maxDepth: 5 });
@@ -397,7 +397,7 @@ When and why to use each, see Best Practices below.
   - "Navigation started (HTTP <status>) but the page did not finish loading before the timeout.": the server answered but the page didn't finish loading; it may still be usable.
 
   `goto` fails only when no page arrived: a DNS or connection error (e.g. `CouldntResolveHost`), or `NavigationTimeout: no response arrived before the timeout, so the page is empty.`
-* **CDP connection limits:** Up to 16 simultaneous CDP connections per process by default (tune with `--cdp-max-connections`). Each connection supports 1 context and 1 page. For more parallelism than that, start multiple processes on different ports — Lightpanda starts instantly, so this is fast.
+* **CDP connection limits:** Up to 16 simultaneous CDP connections per process by default (tune with `--cdp-max-connections`). Each connection supports 1 context and 1 page (a second `Target.createBrowserContext` fails with "Cannot have more than one browser context at a time"). For more parallelism than that, start multiple processes on different ports — Lightpanda starts instantly, so this is fast.
 * **CDP state management:** The browser resets all state on CDP connection close. Keep the WebSocket connection open throughout a session. On each connection, always create a new context and page, and close both when done.
 * The MCP server handles connection management automatically — these CDP limits don't apply when using MCP tools.
 * To report an issue, open a GitHub issue at https://github.com/lightpanda-io/browser/issues including:
