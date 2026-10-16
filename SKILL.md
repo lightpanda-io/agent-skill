@@ -110,17 +110,18 @@ Add to your MCP client configuration:
 
 ### Available MCP Tools
 
-Where both `selector` and `backendNodeId` are accepted, either locates the target element — `selector` is preferred for reproducibility (e.g. in a saved script), `backendNodeId` comes from a prior `tree` or `findElement` call. Read tools that accept an optional `url` navigate there before reading, saving a separate `goto` call.
+Where both `selector` and `backendNodeId` are accepted, either locates the target element — `selector` is preferred for reproducibility (e.g. in a saved script), `backendNodeId` comes from a prior `tree` or `findElement` call.
 
 **Navigation & search:**
 - `goto` — Navigate to a URL and load the page
 - `search` — Run a web search and return results as markdown: a numbered list of `{title, url, snippet}`. Tries Brave, Tavily, Exa, then Keenable in order, each when its API key (`BRAVE_API_KEY`, `TAVILY_API_KEY`, `EXA_API_KEY` or `KEENABLE_API_KEY`) is set; Keenable also works without a key through its public endpoint (rate-limited per client IP)
 
-**Reading the page** (all accept an optional `url` to navigate first):
+**Reading the page** (all accept an optional `url` to navigate first, saving a separate `goto` call):
+A `url` already loaded (current or originally requested) is read without reloading; if a redirect or in-page navigation moved the page, the result opens with "The page is at <current>, not <url>: ..." (use `goto` to reload).
 - `markdown` — Get page content, or a subtree, as markdown
 - `html` — Raw HTML for the document, or a single node's outerHTML when scoped
 - `screenshot` — Render the page, or one node, as a PNG (the text layout Lightpanda computes, not a pixel-accurate rendering)
-- `tree` — Simplified semantic DOM tree optimized for AI reasoning: role, name, value, and `backendNodeId` per node (supports `backendNodeId` filter and `maxDepth` limit)
+- `tree` — Simplified semantic DOM tree optimized for AI reasoning: role, name, value, and `backendNodeId` per node (supports `backendNodeId` filter and `maxDepth` limit). It doesn't enter frames: an iframe's value is its current URL; pass it as `url` to read the frame
 - `links` — Extract all links as text, resolved href, and `backendNodeId`
 - `nodeDetails` — Tag, role, name, attributes, and state for a node by `backendNodeId`, plus a ready-to-use CSS selector
 - `findElement` — Find interactive elements by role and/or accessible name
