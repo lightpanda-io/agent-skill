@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: "Linux and macOS only (Windows via WSL2). Installs its own binary via scripts/install.sh — not run automatically by the plugin installer, so run it once before first use."
 allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/install.sh), Bash(command -v lightpanda), Bash(lightpanda *)
 metadata:
-  version: "2.1.3"
+  version: "2.1.4"
   author: Lightpanda
   source: "https://github.com/lightpanda-io/agent-skill"
   homepage: "https://github.com/lightpanda-io/agent-skill"
@@ -110,17 +110,18 @@ Add to your MCP client configuration:
 
 ### Available MCP Tools
 
-Where both `selector` and `backendNodeId` are accepted, either locates the target element — `selector` is preferred for reproducibility (e.g. in a saved script), `backendNodeId` comes from a prior `tree` or `findElement` call. Read tools that accept an optional `url` navigate there before reading, saving a separate `goto` call.
+Where both `selector` and `backendNodeId` are accepted, either locates the target element — `selector` is preferred for reproducibility (e.g. in a saved script), `backendNodeId` comes from a prior `tree` or `findElement` call.
 
 **Navigation & search:**
 - `goto` — Navigate to a URL and load the page
-- `search` — Run a web search and return results as markdown: a numbered list of `{title, url, snippet}`. Tries Brave, Tavily, Exa, then Keenable in order, each when its API key (`BRAVE_API_KEY`, `TAVILY_API_KEY`, `EXA_API_KEY` or `KEENABLE_API_KEY`) is set; Keenable also works without a key through its public endpoint (rate-limited per client IP)
+- `search` — Run a web search and return results as markdown: a numbered list of `{title, url, snippet}`. Tries Brave, Tavily, Exa, then Keenable in order, each when its API key (`BRAVE_API_KEY`, `TAVILY_API_KEY`, `EXA_API_KEY` or `KEENABLE_API_KEY`) is set; Keenable also works without a key through its public endpoint (rate-limited per client IP); `--block-urls` applies: results whose URL matches are dropped, and a query that matches returns `No results.`
 
-**Reading the page** (all accept an optional `url` to navigate first):
+**Reading the page** (all accept an optional `url` to navigate first, saving a separate `goto` call):
+A `url` already loaded (current or originally requested) is read without reloading; if a redirect or in-page navigation moved the page, the result opens with "The page is at <current>, not <url>: ..." (use `goto` to reload).
 - `markdown` — Get page content, or a subtree, as markdown
 - `html` — Raw HTML for the document, or a single node's outerHTML when scoped
 - `screenshot` — Render the page, or one node, as a PNG (the text layout Lightpanda computes, not a pixel-accurate rendering)
-- `tree` — Simplified semantic DOM tree optimized for AI reasoning: role, name, value, and `backendNodeId` per node (supports `backendNodeId` filter and `maxDepth` limit)
+- `tree` — Simplified semantic DOM tree optimized for AI reasoning: role, name, value, and `backendNodeId` per node (supports `backendNodeId` filter and `maxDepth` limit). It doesn't enter frames: an iframe's value is its current URL; pass it as `url` to read the frame
 - `links` — Extract all links as text, resolved href, and `backendNodeId`
 - `nodeDetails` — Tag, role, name, attributes, and state for a node by `backendNodeId`, plus a ready-to-use CSS selector
 - `findElement` — Find interactive elements by role and/or accessible name
@@ -132,7 +133,7 @@ Where both `selector` and `backendNodeId` are accepted, either locates the targe
 - `extract` — Extract structured data using a schema mapping output field names to CSS-selector specs
 - `evaluate` — Execute JavaScript in the page context; a bare trailing expression yields its value, and top-level `await`/`return` are supported
 
-**Interacting with the page** (return page URL and title after each action):
+**Interacting with the page** (each returns the page URL, HTTP status and title; an action that opens a new window, e.g. a `target=_blank` click, adds "Opened a new window; tools now act on it."):
 - `click` — Click an interactive element
 - `fill` — Fill text into an input, textarea, or select element
 - `scroll` — Scroll the page or a specific element
@@ -142,7 +143,7 @@ Where both `selector` and `backendNodeId` are accepted, either locates the targe
 - `setChecked` — Check or uncheck a checkbox or radio button
 
 **Waiting:**
-- `waitForSelector` — Wait for a CSS selector to match (default timeout: 5000ms)
+- `waitForSelector` — Wait for a CSS selector to match
 - `waitForScript` — Wait until a JS expression returns truthy, re-checked each tick
 - `waitForState` — Wait for a load state (`load`, `domcontentloaded`, `networkalmostidle`, `networkidle`, `done`) with no navigation
 
@@ -162,10 +163,11 @@ Where both `selector` and `backendNodeId` are accepted, either locates the targe
 
 - `mcp://page/html` — Full serialized HTML of the current page
 - `mcp://page/markdown` — Token-efficient markdown representation of the current page (same content as the `markdown` tool)
+- `mcp://skill/pandascript`: the PandaScript skill documentation (no page needed)
 
 ### Multiple sessions (HTTP transport)
 
-Pass `--port` to serve MCP over HTTP instead of stdio, giving each client an independent browsing session: `lightpanda mcp --port 8000`. An `initialize` call with no `Mcp-Session-Id` header mints a fresh session and returns its id in the response header; reuse that id on later calls (or share it with another client). Calls with no session header fall back to the always-present `default` session. Manage sessions explicitly with `session_new` / `session_list` / `session_close`. Over stdio (the Claude Code setup above), there's only ever the one `default` session. Give a task that reads untrusted content its own session (see **Best Practices**).
+Pass `--port` to serve MCP over HTTP instead of stdio, giving each client an independent browsing session, each on its own thread so sessions run in parallel: `lightpanda mcp --port 8000`. An `initialize` call with no `Mcp-Session-Id` header mints a fresh session and returns its id in the response header; reuse that id on later calls (or share it with another client). Calls with no session header fall back to the always-present `default` session. Manage sessions explicitly with `session_new` / `session_list` / `session_close`. Sessions live until closed; `--http-session-timeout <seconds>` closes idle ones (a later call with that id gets 404, so start a new session). Over stdio (the Claude Code setup above), there's only ever the one `default` session, and the `session_*` tools return "multiple sessions require the HTTP transport (start with --port)". Give a task that reads untrusted content its own session (see **Best Practices**).
 
 Add `--cdp-port <INT>` to also run a CDP (WebSocket) server on the same process — useful if something in your workflow needs raw CDP (e.g. Playwright/Puppeteer) alongside MCP. It can't be combined with `--port`, since both share one network listener.
 
@@ -189,12 +191,14 @@ lightpanda fetch --dump markdown --wait-until networkidle https://example.com
 ### Options
 
 - `--dump` — Output format: `html`, `markdown`, `png`, `pdf`, `semantic_tree`, `semantic_tree_text` (the MCP equivalent of `semantic_tree*` is named `tree`)
-- `--wait-until` — Wait strategy: `load`, `domcontentloaded`, `networkalmostidle`, `networkidle`, `done` (default)
+- `--wait-until` — Wait strategy: `load` (default; none when `--wait-selector` or `--wait-script` is set), `domcontentloaded`, `networkalmostidle`, `networkidle`, `done`
 - `--wait-ms` — Max wait time in milliseconds (default: 5000)
 - `--wait-selector` — Wait for a CSS selector to appear, checked after `--wait-until`
 - `--wait-script` — Wait for a JS expression to return truthy, checked after `--wait-until`
 - `--strip-mode` — Remove tag groups from output: `js`, `css`, `ui`, `invisible`, `shell`, `clutter` (comma-separated)
 - `--with-frames` — Include iframe contents in the dump
+- `--dump-selector`: Dump only the first element matching a CSS selector; fails if nothing matches
+- `--dump-max-bytes`: Soft cap on the dumped `html` or `markdown`; a `[truncated]` marker is appended
 - `--json` — Print fetch status as JSON instead of/alongside the dump; required when fetching multiple URLs
 - `--inject-script` / `--inject-script-file` — JavaScript to run as the document's `<head>` is parsed, before any page script runs. Repeatable; runs in CLI order
 - `--terminate-ms` — Hard deadline in milliseconds; forcibly terminates JS execution after this time (unlike `--wait-ms`, which only stops waiting)
@@ -231,7 +235,7 @@ Options:
 - `--cdp-max-connections` — Max simultaneous CDP connections (default: 16)
 - `--cdp-max-message-size` — Max incoming WebSocket message size (default: 1MB)
 - `--disable-metrics` — Disable the `/metrics` Prometheus endpoint
-- `--advertise-host` — Host to advertise in e.g. the `/json/version` response, useful when `--host` is `0.0.0.0`
+- `--advertise-host` — Host to advertise in e.g. the `/json/version` response, useful when `--host` is `0.0.0.0`. It is also the one hostname, besides IP literals and `localhost`, that a WebSocket upgrade accepts in its `Host` header (e.g. a Docker service name); any other name gets a 403 and the log line `rejected websocket host`
 
 Flags shared by every command are in Common Options below; the [serve command guide](https://lightpanda.io/docs/run-locally/commands/serve) is the complete reference.
 
@@ -293,7 +297,7 @@ Lightpanda exposes a custom `LP` domain via CDP with agent-optimized methods not
 - `LP.getInteractiveElements` — Find all interactive elements. Params: `nodeId` (optional)
 - `LP.detectForms` — Detect and extract form information
 - `LP.getNodeDetails` — Get detailed info about a node. Params: `backendNodeId` (required)
-- `LP.waitForSelector` — Wait for a CSS selector match. Params: `selector` (required), `timeout` (default: 5000ms)
+- `LP.waitForSelector` — Wait for a CSS selector match. Params: `selector` (required), `timeout` (default: 5000 ms, or 15000 ms before the page reaches `load`)
 
 **Actions:**
 - `LP.clickNode` — Click a node. Params: `nodeId` or `backendNodeId`
@@ -312,7 +316,7 @@ Lightpanda exposes a custom `LP` domain via CDP with agent-optimized methods not
 const client = await context.newCDPSession(page);
 
 // Get page as markdown
-const { markdown } = await client.send('LP.getMarkdown');
+const { content } = await client.send('LP.dump', { format: 'markdown' });
 
 // Get semantic tree
 const { semanticTree } = await client.send('LP.getSemanticTree', { format: 'text', maxDepth: 5 });
@@ -335,7 +339,7 @@ Hosted Lightpanda, no local binary: use it when the agent can't install software
 
 See [getting started](https://lightpanda.io/docs/run-on-lightpanda-cloud/getting-started).
 
-## Saved Scripts (PandaScript)
+## Agent Mode and Saved Scripts (PandaScript)
 
 A PandaScript is a plain JavaScript automation script that Lightpanda runs directly — no LLM call, deterministic, token-free. It's the right tool once you've figured out a task once and want to repeat it exactly, e.g. on a schedule.
 
@@ -343,6 +347,8 @@ Three ways to produce one:
 - **Mid-session, via MCP:** call the `save` tool with a `path` and a synthesized `script` — see the tool's own description for the script-writing rules.
 - **One-shot, via CLI:** `lightpanda agent --task "..." --save script.js` synthesizes a script from a natural-language task instead of printing the answer.
 - **Interactively:** `lightpanda agent` starts a REPL; drive the browser with natural language or slash commands (every MCP tool is also callable as `/toolName key=value`, e.g. `/goto url=https://example.com`), then `/save script.js`.
+
+Agent mode needs an LLM API key in the environment (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, ...; `lightpanda help agent` lists them) or a local Ollama or llama.cpp server. Without one, `--task` prints "No API key detected." and exits with code 1, and the bare REPL falls back to slash commands only (`--no-llm` forces that).
 
 Replay with no LLM involved:
 
@@ -368,8 +374,13 @@ Accepted by every command (`fetch`, `serve`, `mcp`, `agent`, `run`), not only wh
 
 **Efficiency:**
 - `--http-cache-dir <path>`: directory used as a filesystem cache for network resources (RFC 9111 revalidation). Omitting it disables caching.
-- `--adblock-lists <file>`: EasyList-syntax filter files; requests to a blocked hostname fail before they leave. Repeatable.
+- `--adblock-lists <file>`: EasyList-syntax filter files; blocked requests fail before they leave, matched on URL, resource type, party and `$domain=`. Repeatable.
 - `--block-urls "<pattern>"`: block URLs matching a case-insensitive `*`-wildcard pattern. Repeatable.
+- `--load-resources <type>`: sub-resources to actually request (`iframe`, `image`, `stylesheet`, `worker`; `none` requests none). Repeatable. Nothing is requested by default, except that `mcp` and `agent` load external stylesheets so visibility checks see the CSS; passing the flag replaces that default.
+
+**State:**
+- `--cookie <file>`: load cookies at startup, from a JSON array in the CDP/Puppeteer format or a Netscape `cookies.txt` (`serve`, `fetch` and `mcp`).
+- `--cookie-jar <file>`: write the cookies to a JSON file on exit (`fetch` and `mcp`). `agent` ignores both flags.
 
 **Security:** `--block-private-networks`: block HTTP requests to private/internal IP addresses after DNS resolution. Defaults to false.
 
@@ -378,9 +389,14 @@ When and why to use each, see Best Practices below.
 ## Important Notes
 
 * For web searches, use the `search` tool instead of Google. Google blocks Lightpanda due to browser fingerprinting.
-* Lightpanda is under heavy development and may have occasional issues. It executes JavaScript, making it suitable for dynamic websites and SPAs.
-* **Be careful trusting `goto`'s response.** It reports failure directly for DNS and connection errors (e.g. `CouldntResolveHost`), so that part is reliable. Two other cases still look like success. A timeout returns "Navigation started but the page did not finish loading before the timeout." instead of failing. An HTTP error page (404, 500) is a real response, so `goto` reports it as a successful navigation to that page. Check the content with a follow-up read when the response status matters.
-* **CDP connection limits:** Up to 16 simultaneous CDP connections per process by default (tune with `--cdp-max-connections`). Each connection supports 1 context and 1 page. For more parallelism than that, start multiple processes on different ports — Lightpanda starts instantly, so this is fast.
+* **Check the status in `goto`'s response.** A navigation can succeed without loading the requested content:
+  - `Navigated. HTTP <status>.` (e.g. `Navigated. HTTP 200 OK.`): the page loaded.
+  - "HTTP <status>: this is likely an error or rate-limit page, not the requested content.": the server answered with a 4xx or 5xx page (MCP only).
+  - "Blocked by a <kind> bot challenge (HTTP <status>): this is not the requested content.": a bot challenge page (MCP only).
+  - "Navigation started (HTTP <status>) but the page did not finish loading before the timeout.": the server answered but the page didn't finish loading; it may still be usable.
+
+  `goto` fails only when no page arrived: a DNS or connection error (e.g. `CouldntResolveHost`), or `NavigationTimeout: no response arrived before the timeout, so the page is empty.`
+* **CDP connection limits:** Up to 16 simultaneous CDP connections per process by default (tune with `--cdp-max-connections`). Each connection supports 1 context and 1 page (a second `Target.createBrowserContext` fails with "Cannot have more than one browser context at a time"). For more parallelism than that, start multiple processes on different ports — Lightpanda starts instantly, so this is fast.
 * **CDP state management:** The browser resets all state on CDP connection close. Keep the WebSocket connection open throughout a session. On each connection, always create a new context and page, and close both when done.
 * The MCP server handles connection management automatically — these CDP limits don't apply when using MCP tools.
 * To report an issue, open a GitHub issue at https://github.com/lightpanda-io/browser/issues including:
@@ -406,10 +422,12 @@ A user-agent string is only a claim that anything can send. Web Bot Auth (the `-
 - Prefer a bulk source: `git clone` over walking a web git forge, a documented API over its UI, `sitemap.xml` over link discovery.
 - Cap how deep you follow links and how many URLs you keep per domain. Stay out of infinite URL spaces (calendars, arbitrary diffs, faceted search); a run that wanders in never terminates and looks like an attack while it does.
 - Set `--http-cache-dir` for anything that runs more than once; unchanged resources then cost only a revalidation.
-- Cut trackers and ads with `--adblock-lists` / `--block-urls`. Sub-resources and external stylesheets aren't fetched by default (agent mode with an LLM is the exception: it loads stylesheets for visibility checks).
+- Cut trackers and ads with `--adblock-lists` / `--block-urls`. Sub-resources aren't fetched by default (`--load-resources` opts in; `mcp` and `agent` load external stylesheets, which `--load-resources none` turns off).
 - Use the `search` tool instead of navigating a search-results page.
 
 **Give every task its own browser.** A fresh instance carries no leftover cookies or state, and scoping caps the blast radius of a prompt injection from untrusted page content. Add `--block-private-networks` whenever you follow links a page handed you rather than links you chose. CDP: a new browser or context per task. MCP: stdio mode is one browser for the whole session, so use HTTP mode (`--port`) when you need a browser per task.
+
+**Keep credentials out of the agent's context.** Export them as `LP_*` environment variables before starting Lightpanda, named `LP_<SITE>_<FIELD>` (e.g. `LP_GH_TOKEN`), then pass `$LP_GH_TOKEN` in any tool's string arguments, PandaScript included. Lightpanda substitutes the value itself, so the secret never reaches the model or a saved script.
 
 **Once a flow is settled, stop re-deriving it.** Capture it as a PandaScript (the Saved Scripts section above) and replay it with `lightpanda run`: no tokens spent, and failures surface as script errors instead of plausible wrong answers.
 

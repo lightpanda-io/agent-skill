@@ -1,6 +1,6 @@
 ---
 name: pandascript
-description: Write PandaScript agent scripts (.js) — Lightpanda's replayable browser-automation format, run token-free with `lightpanda agent script.js`.
+description: Write PandaScript agent scripts (.js) — Lightpanda's replayable browser-automation format, run token-free with `lightpanda run script.js`.
 ---
 
 # Writing Lightpanda agent scripts
@@ -8,7 +8,7 @@ description: Write PandaScript agent scripts (.js) — Lightpanda's replayable b
 Run with:
 
 ```console
-./lightpanda agent script.js
+./lightpanda run script.js
 ```
 
 ## Mental model (get this right first)
@@ -32,12 +32,13 @@ The script runs in its **own V8 context** — neither the page nor Node.js:
 |------|-------|
 | `new Page()` | Makes a page object. No navigation yet — call `page.goto(url)` before any other method. Make several to navigate in parallel (fan-out, best practice 2). |
 | `page.close()` | Marks the page done; later method calls on it error. The page is otherwise reclaimed at script end. |
-| `await page.goto(url[, { timeout }])` | **Async — must be `await`ed.** Navigates the page (re-navigating reuses the same object). Waits for `load`. Rejects on navigation failure; a **timeout does NOT reject** (the page may still be usable). Default timeout 10000 ms. |
+| `await page.goto(url[, { timeout, waitUntil }])` | **Async — must be `await`ed.** Navigates the page (re-navigating reuses the same object). Waits for `load`. Rejects on navigation failure; a **timeout does NOT reject** (the page may still be usable). Default timeout 10000 ms. `waitUntil`: one of `"load"`, `"domcontentloaded"`, `"networkalmostidle"`, `"networkidle"`, `"done"`. |
+| `page.screenshot([{ path, selector, fullPage, strip, url, timeout }])` | `path` is required: writes a PNG of the text layout. |
 | `page.evaluate(script[, { url, timeout, save }])` | Page-side JS escape hatch; returns text (JSON for objects/arrays). |
 | `page.extract(schema)` | The only primitive returning a real JS value (object/array). The schema is its only argument. See schema below. |
 | `page.click(selector)` |  |
 | `page.fill(selector, value)` |  |
-| `page.scroll([{ x, y }])` |  |
+| `page.scroll([{ selector, x, y }])` |  |
 | `page.waitForSelector(selector[, { timeout }])` | `waitFor*` default timeout 5000 ms. |
 | `page.waitForScript(script[, { timeout }])` | Re-evaluates page JS until truthy. |
 | `page.waitForState(state[, { timeout }])` | `state`: one of `"load"`, `"domcontentloaded"`, `"networkalmostidle"`, `"networkidle"`, `"done"`. |
@@ -48,11 +49,12 @@ The script runs in its **own V8 context** — neither the page nor Node.js:
 
 Options (the trailing `{ … }` object; every option may be omitted):
 
-- `goto`: `timeout` — Optional timeout in milliseconds. Defaults to 10000.
-- `evaluate`: `url` — Optional URL to navigate to before evaluating. `timeout` — Optional timeout in milliseconds. Defaults to 10000. `save` — Optional bridge-store key. The evaluate's return value is stored under this name and re-exposed as `lp.<name>` to subsequent evaluates. Objects, arrays, and strings are serialized automatically — no JSON.stringify needed.
-- `scroll`: `x` — Optional: The horizontal scroll offset. `y` — Optional: The vertical scroll offset.
-- `waitForSelector`: `timeout` — Optional timeout in milliseconds. Defaults to 5000.
-- `waitForScript`: `timeout` — Optional timeout in milliseconds. Defaults to 5000.
+- `goto`: `timeout` — Optional timeout in milliseconds. Defaults to 10000. `waitUntil` — Event that completes the navigation. Defaults to 'load'. Prefer 'domcontentloaded' followed by waitForSelector on pages whose late scripts (ads) hold 'load' back. Avoid 'done' (full quiescence): on pages with constant background activity it is the slowest choice and can run to the timeout.
+- `screenshot`: `path` — Optional relative path (no '..' segments) to write the PNG to. Created or overwritten. Without it the image is returned inline, which needs a client that can display images. `selector` — Optional CSS selector. When set, render only that element. `fullPage` — Render the whole content height instead of one viewport. Defaults to false. `strip` — Optional. Omit element groups from the render; same groups as the html tool's strip (`js`, `css`, `ui`, `invisible`, `shell`, `clutter`). `url` — Optional URL to navigate to before rendering. An empty string is treated as omitted. `timeout` — Optional timeout in milliseconds. Defaults to 10000.
+- `evaluate`: `url` — Optional URL to navigate to before evaluating. An empty string is treated as omitted. `timeout` — Optional timeout in milliseconds. Defaults to 10000. `save` — Optional bridge-store key. The evaluate's return value is stored under this name and re-exposed as `lp.<name>` to subsequent evaluates. Objects, arrays, and strings are serialized automatically — no JSON.stringify needed.
+- `scroll`: `selector` — Optional: CSS selector of the element to scroll. Preferred over backendNodeId. If the element is not itself a scroll container, its nearest scrollable ancestor is scrolled instead. `x` — Optional: The horizontal scroll offset. `y` — Optional: The vertical scroll offset.
+- `waitForSelector`: `timeout` — Optional timeout in milliseconds. Defaults to 5000, or 15000 when the page has not reached 'load' yet.
+- `waitForScript`: `timeout` — Optional timeout in milliseconds. Defaults to 5000, or 15000 when the page has not reached 'load' yet.
 - `waitForState`: `timeout` — Optional timeout in milliseconds. Defaults to 5000.
 
 Calling convention: leading positionals + optional trailing options object, or one object with everything (`page.waitForSelector("#row", { timeout: 2000 })` ≡ `page.waitForSelector({ selector: "#row", timeout: 2000 })`). A bare option positional (`page.waitForSelector("#row", 2000)`) and a field passed both ways are `invalid arguments`. `null` skips a positional. Arguments must be JSON-serializable.

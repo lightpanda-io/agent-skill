@@ -14,7 +14,7 @@
       "name": "lightpanda",
       "source": "./",
       "description": "Fast headless browser for AI agents - drop-in replacement for Chrome/Chromium for data extraction and web automation over MCP, CDP or WebDriver, from Python or npm, or hosted on Lightpanda Cloud",
-      "version": "2.1.3",
+      "version": "2.1.4",
       "author": {
         "name": "Lightpanda"
       },
