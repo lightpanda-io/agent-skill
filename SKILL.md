@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: "Linux and macOS only (Windows via WSL2). Installs its own binary via scripts/install.sh — not run automatically by the plugin installer, so run it once before first use."
 allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/install.sh), Bash(command -v lightpanda), Bash(lightpanda *)
 metadata:
-  version: "2.1.4"
+  version: "2.1.5"
   author: Lightpanda
   source: "https://github.com/lightpanda-io/agent-skill"
   homepage: "https://github.com/lightpanda-io/agent-skill"
@@ -30,7 +30,7 @@ Lightpanda is available on Linux and macOS only. Windows is supported via WSL2.
 
 ### Install script
 
-The binary is a nightly build that evolves quickly. If you encounter crashes or issues, run the install command below again to update to the latest version (max once per day).
+The script installs the latest release; set `LIGHTPANDA_VERSION=nightly` (or a release tag) to pick another build. If you encounter crashes or issues, run the install command below again to update to the latest version.
 
 - **Claude Code:**
   ```bash
@@ -46,7 +46,7 @@ See [package manager installs](https://lightpanda.io/docs/run-locally/installati
 - **AUR** (Arch Linux): `yay -S lightpanda-bin` (or `lightpanda-nightly-bin` to track nightly)
 - **Debian/Ubuntu** (0.3.0+): `.deb` package from each [tagged release](https://github.com/lightpanda-io/browser/releases)
 
-Unlike `scripts/install.sh`, which always tracks the latest nightly, these pin to a stable release unless you explicitly opt into a nightly variant.
+These pin to a stable release unless you explicitly opt into a nightly variant.
 
 ### Docker
 
