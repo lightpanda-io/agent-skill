@@ -389,7 +389,6 @@ When and why to use each, see Best Practices below.
 ## Important Notes
 
 * For web searches, use the `search` tool instead of Google. Google blocks Lightpanda due to browser fingerprinting.
-* Lightpanda is under heavy development and may have occasional issues. It executes JavaScript, making it suitable for dynamic websites and SPAs.
 * **Check the status in `goto`'s response.** A navigation can succeed without loading the requested content:
   - `Navigated. HTTP <status>.` (e.g. `Navigated. HTTP 200 OK.`): the page loaded.
   - "HTTP <status>: this is likely an error or rate-limit page, not the requested content.": the server answered with a 4xx or 5xx page (MCP only).
