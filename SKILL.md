@@ -1,11 +1,11 @@
 ---
 name: lightpanda
-description: Lightpanda browser, drop-in replacement for Chrome-based browsing in any AI agent - faster and lighter for tasks without graphical rendering like data retrieval. Use it via MCP server, CLI fetch, or CDP with Playwright/Puppeteer — or run/save automations as deterministic, token-free replay scripts (PandaScript) via its own agent mode.
+description: Lightpanda browser, drop-in replacement for Chrome-based browsing in any AI agent - faster and lighter for tasks without graphical rendering like data retrieval. Install it and use it via MCP server, CLI fetch, CDP with Playwright/Puppeteer, or WebDriver with Selenium; MCP and CDP also run on Lightpanda Cloud. Its agent mode saves automations as deterministic, token-free replay scripts (PandaScript).
 license: Apache-2.0
 compatibility: "Linux and macOS only (Windows via WSL2). Installs its own binary via scripts/install.sh — not run automatically by the plugin installer, so run it once before first use."
 allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/install.sh), Bash(command -v lightpanda), Bash(lightpanda *)
 metadata:
-  version: "2.1.2"
+  version: "2.1.3"
   author: Lightpanda
   source: "https://github.com/lightpanda-io/agent-skill"
   homepage: "https://github.com/lightpanda-io/agent-skill"
@@ -24,7 +24,13 @@ Prefer the built-in Web Search tool when it is available and sufficient for your
 
 ## Install
 
-Check first whether Lightpanda is already installed (`command -v lightpanda`) before running the installer below.
+Check first whether Lightpanda is already installed (`command -v lightpanda`) before running the installer below. All options: [installation docs](https://lightpanda.io/docs/run-locally/installation/one-liner).
+
+Lightpanda is available on Linux and macOS only. Windows is supported via WSL2.
+
+### Install script
+
+The binary is a nightly build that evolves quickly. If you encounter crashes or issues, run the install command below again to update to the latest version (max once per day).
 
 - **Claude Code:**
   ```bash
@@ -33,21 +39,33 @@ Check first whether Lightpanda is already installed (`command -v lightpanda`) be
   `${CLAUDE_SKILL_DIR}` is a Claude Code substitution that resolves to this skill's own directory regardless of the shell's current working directory — needed because when this skill runs as a plugin, the shell's cwd is your project, not the skill's install location.
 - **Any other agent runtime** (Cursor, Codex CLI, Gemini CLI, etc.): this substitution isn't supported. `scripts/install.sh` is bundled directly next to this file — locate it there and run it with that path instead, e.g. `bash /path/to/this/skill/scripts/install.sh`.
 
-Lightpanda is available on Linux and macOS only. Windows is supported via WSL2.
+### Package managers
 
-Prefer a package manager? See [package manager installs](https://lightpanda.io/docs/run-locally/installation/package-managers):
-- **Homebrew** (macOS/Linux): `brew install lightpanda-io/browser/lightpanda`
+See [package manager installs](https://lightpanda.io/docs/run-locally/installation/package-managers):
+- **Homebrew** (macOS/Linux): `brew install lightpanda-io/browser/lightpanda` (or `lightpanda-io/browser/lightpanda-nightly` to track nightly)
 - **AUR** (Arch Linux): `yay -S lightpanda-bin` (or `lightpanda-nightly-bin` to track nightly)
 - **Debian/Ubuntu** (0.3.0+): `.deb` package from each [tagged release](https://github.com/lightpanda-io/browser/releases)
 
 Unlike `scripts/install.sh`, which always tracks the latest nightly, these pin to a stable release unless you explicitly opt into a nightly variant.
 
-The binary is a nightly build that evolves quickly. If you encounter crashes or issues, run the install command above again to update to the latest version (max once per day).
+### Docker
 
-If issues persist after updating, open a GitHub issue at https://github.com/lightpanda-io/browser/issues including:
-- The crash trace/error output, or a description of the unexpected behavior
-- The script or MCP tool call that reproduces the issue
-- The target URL and expected vs actual results
+Linux amd64/arm64: `docker run -d --name lightpanda -p 127.0.0.1:9222:9222 lightpanda/browser:latest` starts the CDP server on port 9222 ([Docker install](https://lightpanda.io/docs/run-locally/installation/docker)).
+
+### Python and Node.js packages
+
+- **Python** (3.10+): `pip install lightpanda` bundles the browser. Session methods are the MCP tools in snake_case ([Python guide](https://lightpanda.io/docs/guides/use-python)):
+  ```python
+  from lightpanda import Browser
+  with Browser() as b:
+      page = b.new_session()
+      page.goto(url="https://example.com")
+  ```
+- **Node.js** (22+): `npm install @lightpanda/browser && npx @lightpanda/browser install` (the second step downloads the binary and is required). `lightpanda.serve({ host, port })` starts a CDP server and `lightpanda.fetch(url, options)` fetches a page ([package README](https://www.npmjs.com/package/@lightpanda/browser)).
+
+### No install at all
+
+Use [Lightpanda Cloud](#lightpanda-cloud).
 
 ## When to Use What
 
@@ -58,6 +76,8 @@ Lightpanda offers several interfaces. Choose based on your needs:
 | **MCP server** | Agent workflows, interactive browsing, form filling | Structured tools over stdio — purpose-built for LLM agents |
 | **CLI fetch** | Quick one-off page extraction | Single command, no server needed |
 | **CDP server** | Custom automation with Playwright/Puppeteer | WebSocket protocol, full browser control |
+| **WebDriver server** | Selenium, or Puppeteer over BiDi | `lightpanda serve --protocol webdriver`, classic WebDriver over HTTP plus BiDi over WebSocket |
+| **Lightpanda Cloud** | Agents that can't install a binary or keep a process running, or need proxies | Hosted CDP, MCP and HTTP API endpoints, authenticated with a token |
 | **Agent mode** | One-off natural-language tasks, or authoring a PandaScript to save for later | `lightpanda agent` — LLM-driven CLI/REPL, optionally `--task "..." --save script.js` |
 | **Saved scripts (PandaScript)** | Repeating the same task deterministically, without burning tokens | Plain JS script, replayed with `lightpanda run` — no LLM call |
 
@@ -302,6 +322,19 @@ const { backendNodeId } = await client.send('LP.waitForSelector', { selector: '#
 await client.send('LP.clickNode', { backendNodeId });
 ```
 
+## WebDriver Classic and BiDi (Selenium, Puppeteer)
+
+`lightpanda serve --protocol webdriver` serves classic WebDriver (HTTP, `POST /session`) and WebDriver BiDi (WebSocket at `/session`; with Selenium, request it through the `webSocketUrl: true` capability). Point Selenium at `http://127.0.0.1:9222`, or Puppeteer at `ws://127.0.0.1:9222/session` with `protocol: 'webDriverBiDi'`. Local only, and coverage of both specs is partial: see the [Selenium guide](https://lightpanda.io/docs/usage/bidi/selenium).
+
+## Lightpanda Cloud
+
+Hosted Lightpanda, no local binary: use it when the agent can't install software or keep a process running, or needs managed proxies. Get a token at [console.lightpanda.io](https://console.lightpanda.io/signup), pick the `euwest` or `uswest` region, then connect:
+- **CDP:** `wss://euwest.cloud.lightpanda.io/ws?token=TOKEN`, the same Playwright/Puppeteer code as above
+- **MCP:** `https://euwest.cloud.lightpanda.io/mcp?token=TOKEN` over Streamable HTTP (a subset of the local tools; stdio-only hosts go through `npx -y mcp-remote <url>`)
+- **HTTP API:** `POST https://euwest.cloud.lightpanda.io/api/fetch` with `Authorization: Bearer TOKEN` and a JSON body like `{"url": "...", "output_format": "markdown"}` returns one page's HTML or Markdown
+
+See [getting started](https://lightpanda.io/docs/run-on-lightpanda-cloud/getting-started).
+
 ## Saved Scripts (PandaScript)
 
 A PandaScript is a plain JavaScript automation script that Lightpanda runs directly — no LLM call, deterministic, token-free. It's the right tool once you've figured out a task once and want to repeat it exactly, e.g. on a schedule.
@@ -350,6 +383,10 @@ When and why to use each, see Best Practices below.
 * **CDP connection limits:** Up to 16 simultaneous CDP connections per process by default (tune with `--cdp-max-connections`). Each connection supports 1 context and 1 page. For more parallelism than that, start multiple processes on different ports — Lightpanda starts instantly, so this is fast.
 * **CDP state management:** The browser resets all state on CDP connection close. Keep the WebSocket connection open throughout a session. On each connection, always create a new context and page, and close both when done.
 * The MCP server handles connection management automatically — these CDP limits don't apply when using MCP tools.
+* To report an issue, open a GitHub issue at https://github.com/lightpanda-io/browser/issues including:
+  - The crash trace/error output, or a description of the unexpected behavior
+  - The script or MCP tool call that reproduces the issue
+  - The target URL and expected vs actual results
 
 ## Best Practices
 
