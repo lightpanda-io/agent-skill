@@ -6,6 +6,7 @@ set -e
 
 INSTALL_DIR="${LIGHTPANDA_DIR:-$HOME/.local/bin}"
 BINARY_NAME="lightpanda"
+VERSION="${LIGHTPANDA_VERSION:-latest}"
 
 echo "=== Lightpanda Setup ==="
 echo "Install directory: $INSTALL_DIR"
@@ -18,10 +19,10 @@ case "$OS" in
     Linux)
         case "$ARCH" in
             x86_64)
-                DOWNLOAD_URL="https://github.com/lightpanda-io/browser/releases/download/nightly/lightpanda-x86_64-linux"
+                ASSET_NAME="lightpanda-x86_64-linux"
                 ;;
             aarch64|arm64)
-                DOWNLOAD_URL="https://github.com/lightpanda-io/browser/releases/download/nightly/lightpanda-aarch64-linux"
+                ASSET_NAME="lightpanda-aarch64-linux"
                 ;;
             *)
                 echo "ERROR: Unsupported architecture: $ARCH"
@@ -32,10 +33,10 @@ case "$OS" in
     Darwin)
         case "$ARCH" in
             x86_64)
-                DOWNLOAD_URL="https://github.com/lightpanda-io/browser/releases/download/nightly/lightpanda-x86_64-macos"
+                ASSET_NAME="lightpanda-x86_64-macos"
                 ;;
             arm64|aarch64)
-                DOWNLOAD_URL="https://github.com/lightpanda-io/browser/releases/download/nightly/lightpanda-aarch64-macos"
+                ASSET_NAME="lightpanda-aarch64-macos"
                 ;;
             *)
                 echo "ERROR: Unsupported architecture: $ARCH"
@@ -51,7 +52,6 @@ case "$OS" in
 esac
 
 echo "Detected: $OS $ARCH"
-echo "Download URL: $DOWNLOAD_URL"
 
 # Check for required tools
 if ! command -v curl &> /dev/null; then
@@ -72,13 +72,29 @@ fi
 # Create install directory
 mkdir -p "$INSTALL_DIR"
 
-# Determine asset name from URL
-ASSET_NAME="${DOWNLOAD_URL##*/}"
+# Resolve the release: the latest stable one by default, or LIGHTPANDA_VERSION (a tag, or "nightly")
+if [ "$VERSION" = "latest" ]; then
+    RELEASE_API="https://api.github.com/repos/lightpanda-io/browser/releases/latest"
+else
+    RELEASE_API="https://api.github.com/repos/lightpanda-io/browser/releases/tags/$VERSION"
+fi
 
-# Fetch expected SHA256 digest from GitHub release API
-echo "Fetching expected checksum from GitHub API..."
-EXPECTED_DIGEST=$(curl -sL "https://api.github.com/repos/lightpanda-io/browser/releases/tags/nightly" \
-    | jq -r --arg name "$ASSET_NAME" '.assets[] | select(.name == $name) | .digest')
+# One API call gives both the tag and the checksum, so they always match
+echo "Fetching release info from GitHub API..."
+RELEASE_JSON=$(curl -sL "$RELEASE_API")
+TAG=$(echo "$RELEASE_JSON" | jq -r '.tag_name')
+
+if [ -z "$TAG" ] || [ "$TAG" = "null" ]; then
+    echo "ERROR: Could not find release '$VERSION' on GitHub."
+    exit 1
+fi
+
+DOWNLOAD_URL="https://github.com/lightpanda-io/browser/releases/download/$TAG/$ASSET_NAME"
+echo "Release: $TAG"
+echo "Download URL: $DOWNLOAD_URL"
+
+# Fetch expected SHA256 digest from the same release
+EXPECTED_DIGEST=$(echo "$RELEASE_JSON" | jq -r --arg name "$ASSET_NAME" '.assets[] | select(.name == $name) | .digest')
 
 if [ -z "$EXPECTED_DIGEST" ] || [ "$EXPECTED_DIGEST" = "null" ]; then
     echo "ERROR: Could not retrieve checksum for $ASSET_NAME from GitHub API."
