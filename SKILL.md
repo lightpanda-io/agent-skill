@@ -428,6 +428,8 @@ A user-agent string is only a claim that anything can send. Web Bot Auth (the `-
 
 **Give every task its own browser.** A fresh instance carries no leftover cookies or state, and scoping caps the blast radius of a prompt injection from untrusted page content. Add `--block-private-networks` whenever you follow links a page handed you rather than links you chose. CDP: a new browser or context per task. MCP: stdio mode is one browser for the whole session, so use HTTP mode (`--port`) when you need a browser per task.
 
+**Keep credentials out of the agent's context.** Export them as `LP_*` environment variables before starting Lightpanda, named `LP_<SITE>_<FIELD>` (e.g. `LP_GH_TOKEN`), then pass `$LP_GH_TOKEN` in any tool's string arguments, PandaScript included. Lightpanda substitutes the value itself, so the secret never reaches the model or a saved script.
+
 **Once a flow is settled, stop re-deriving it.** Capture it as a PandaScript (the Saved Scripts section above) and replay it with `lightpanda run`: no tokens spent, and failures surface as script errors instead of plausible wrong answers.
 
 ## Scripts
