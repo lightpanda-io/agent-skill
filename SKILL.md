@@ -308,6 +308,7 @@ Lightpanda exposes a custom `LP` domain via CDP with agent-optimized methods not
 - `LP.scrollNode` — Scroll page or element. Params: `nodeId` or `backendNodeId` (optional), `x`, `y`
 
 **Debugging & configuration:**
+- `LP.getPageStatus`: what the last navigation got and what the page lacks: `url`, `httpStatus`, `botChallenge`, `navigateError`, `jsErrors`, `unsupported` (e.g. WebGL), `skipped` (e.g. iframes), `missingGlobals`, `failed`, `blocked` (403/429 responses), `resourceChallenge`
 - `LP.getContentSignal` — Read the current host's advisory `Content-Signal` robots.txt preferences ([contentsignals.org](https://contentsignals.org)). `available` is false unless `--obey-robots` populated the store.
 - `LP.handleJavaScriptDialog` — Pre-arm the response (`accept`, optional `promptText`) for the *next* `window.alert`/`confirm`/`prompt`. Lightpanda auto-dismisses dialogs headlessly, so this must be sent *before* the JS that opens the dialog, not reactively like standard CDP's `Page.handleJavaScriptDialog`.
 - `LP.configureCDP` — Toggle CDP compatibility behaviors. Params: `disableSetCacheDisabled`, `obeyRobots`, `httpVersion` (`auto`/`1.1`) (each optional)
@@ -394,9 +395,14 @@ When and why to use each, see Best Practices below.
 * For web searches, use the `search` tool instead of Google. Google blocks Lightpanda due to browser fingerprinting.
 * **Check the status in `goto`'s response.** A navigation can succeed without loading the requested content:
   - `Navigated. HTTP <status>.` (e.g. `Navigated. HTTP 200 OK.`): the page loaded.
-  - "HTTP <status>: this is likely an error or rate-limit page, not the requested content.": the server answered with a 4xx or 5xx page (MCP only).
-  - "Blocked by a <kind> bot challenge (HTTP <status>): this is not the requested content.": a bot challenge page (MCP only).
+  - "HTTP <status>: this is likely an error or rate-limit page, not the requested content.": the server answered with a 4xx or 5xx page (MCP and agent mode).
+  - "Blocked by a <kind> bot challenge (HTTP <status>): this is not the requested content.": a bot challenge page (MCP and agent mode).
   - "Navigation started (HTTP <status>) but the page did not finish loading before the timeout.": the server answered but the page didn't finish loading; it may still be usable.
+  - Notes can precede the response, one sentence per thing the page lacks; reads of that page miss the content they name (MCP and agent mode):
+    - "The page asked for WebGL, which Lightpanda does not provide: anything it renders that way is missing."
+    - "<n> iframe(s) were not loaded: subframe loading is off."
+    - "<n> of the page's own request(s) were refused with HTTP 403/429, likely bot detection or rate limiting: content they load is missing."
+    - "A <kind> bot challenge blocked some of the page's own requests: content they load is missing." (replaces the 403/429 note)
 
   `goto` fails only when no page arrived: a DNS or connection error (e.g. `CouldntResolveHost`), or `NavigationTimeout: no response arrived before the timeout, so the page is empty.`
 * **CDP connection limits:** Up to 16 simultaneous CDP connections per process by default (tune with `--cdp-max-connections`). Each connection supports 1 context and 1 page (a second `Target.createBrowserContext` fails with "Cannot have more than one browser context at a time"). For more parallelism than that, start multiple processes on different ports — Lightpanda starts instantly, so this is fast.
