@@ -190,7 +190,7 @@ lightpanda fetch --dump markdown --wait-until networkidle https://example.com
 
 ### Options
 
-- `--dump` — Output format: `html`, `markdown`, `png`, `pdf`, `semantic_tree`, `semantic_tree_text` (the MCP equivalent of `semantic_tree*` is named `tree`)
+- `--dump` — Output format: `html`, `markdown`, `png`, `pdf`, `semantic_tree`, `semantic_tree_text`, `structured_data` (JSON-LD, OpenGraph, Twitter card, meta and link tags as JSON) (the MCP equivalent of `semantic_tree*` is named `tree`)
 - `--wait-until` — Wait strategy: `load` (default; none when `--wait-selector` or `--wait-script` is set), `domcontentloaded`, `networkalmostidle`, `networkidle`, `done`
 - `--wait-ms` — Max wait time in milliseconds (default: 5000)
 - `--wait-selector` — Wait for a CSS selector to appear, checked after `--wait-until`
@@ -200,6 +200,7 @@ lightpanda fetch --dump markdown --wait-until networkidle https://example.com
 - `--dump-selector`: Dump only the first element matching a CSS selector; fails if nothing matches
 - `--dump-max-bytes`: Soft cap on the dumped `html` or `markdown`; a `[truncated]` marker is appended
 - `--json` — Print fetch status as JSON instead of/alongside the dump; required when fetching multiple URLs
+- `--markdown-alternate`: with `--dump markdown`, when the page links a markdown version of itself (`<link rel="alternate" type="text/markdown">`), dump that file instead of converting the page. Falls back to converting when there is no such link or it doesn't load as markdown
 - `--inject-script` / `--inject-script-file` — JavaScript to run as the document's `<head>` is parsed, before any page script runs. Repeatable; runs in CLI order
 - `--terminate-ms` — Hard deadline in milliseconds; forcibly terminates JS execution after this time (unlike `--wait-ms`, which only stops waiting)
 
