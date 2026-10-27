@@ -237,6 +237,8 @@ Options:
 - `--cdp-max-message-size` — Max incoming WebSocket message size (default: 1MB)
 - `--disable-metrics` — Disable the `/metrics` Prometheus endpoint
 - `--advertise-host` — Host to advertise in e.g. the `/json/version` response, useful when `--host` is `0.0.0.0`. It is also the one hostname, besides IP literals and `localhost`, that a WebSocket upgrade accepts in its `Host` header (e.g. a Docker service name); any other name gets a 403 and the log line `rejected websocket host`
+- `--remote-allow-origins <origin>`: accept this `Origin` header (or `*` for any) on CDP and BiDi WebSocket upgrades. Repeatable. By default an upgrade that sends an `Origin` header gets a 403 and the log line `rejected websocket origin`; upgrades without one are always accepted
+- `--unix-socket <path>`: listen on this absolute Unix-domain socket path (mode 0600) instead of TCP. Can't be combined with `--host`, `--port` or `--advertise-host`
 
 Flags shared by every command are in Common Options below; the [serve command guide](https://lightpanda.io/docs/run-locally/commands/serve) is the complete reference.
 
@@ -381,7 +383,7 @@ Accepted by every command (`fetch`, `serve`, `mcp`, `agent`, `run`), not only wh
 
 **State:**
 - `--cookie <file>`: load cookies at startup, from a JSON array in the CDP/Puppeteer format or a Netscape `cookies.txt` (`serve`, `fetch` and `mcp`).
-- `--cookie-jar <file>`: write the cookies to a JSON file on exit (`fetch` and `mcp`). `agent` ignores both flags.
+- `--cookie-jar <file>`: write the cookies to a JSON file on exit (`fetch` and `mcp`), or when a CDP browser context closes (`serve`; with several clients, the last to close wins). `agent` ignores both flags.
 
 **Security:** `--block-private-networks`: block HTTP requests to private/internal IP addresses after DNS resolution. Defaults to false.
 
