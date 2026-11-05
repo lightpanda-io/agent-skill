@@ -201,7 +201,7 @@ lightpanda fetch --dump markdown --wait-until networkidle https://example.com
 
 ### Options
 
-- `--dump` — Output format: `html`, `markdown`, `png`, `pdf`, `semantic_tree`, `semantic_tree_text`, `structured_data` (JSON-LD, microdata, OpenGraph, Twitter card, meta and link tags as JSON) (the MCP equivalent of `semantic_tree*` is named `tree`)
+- `--dump` — Output format: `html`, `markdown` (asks the server for markdown first and dumps it as-is when it gets some, logged as "markdown served"; not with `--dump-selector`, `--wait-selector`, `--wait-script` or `--inject-script`), `png`, `pdf`, `semantic_tree`, `semantic_tree_text`, `structured_data` (JSON-LD, microdata, OpenGraph, Twitter card, meta and link tags as JSON) (the MCP equivalent of `semantic_tree*` is named `tree`)
 - `--wait-until` — Wait strategy: `load` (default; none when `--wait-selector` or `--wait-script` is set), `domcontentloaded`, `networkalmostidle`, `networkidle`, `done`
 - `--wait-ms` — Max wait time in milliseconds (default: 5000)
 - `--wait-selector` — Wait for a CSS selector to appear, checked after `--wait-until`
@@ -393,7 +393,7 @@ Accepted by every command (`fetch`, `serve`, `mcp`, `agent`, `run`), not only wh
 - `--http-cache-dir <path>`: directory used as a filesystem cache for network resources (RFC 9111 revalidation). Omitting it disables caching.
 - `--adblock-lists <file>`: EasyList-syntax filter files; blocked requests fail before they leave, matched on URL, resource type, party and `$domain=`. Repeatable.
 - `--block-urls "<pattern>"`: block URLs matching a case-insensitive `*`-wildcard pattern. Repeatable.
-- `--load-resources <type>`: sub-resources to actually request (`iframe`, `image`, `stylesheet`, `worker`; `none` requests none). Repeatable. Nothing is requested by default, except that `mcp` and `agent` load external stylesheets so visibility checks see the CSS; passing the flag replaces that default.
+- `--load-resources <type>`: sub-resources to actually request (`beacon`, `iframe`, `image`, `stylesheet`, `worker`; `none` requests none). Repeatable. Nothing is requested by default, except that `mcp` and `agent` load external stylesheets so visibility checks see the CSS; passing the flag replaces that default.
 
 **State:**
 - `--cookie <file>`: load cookies at startup, from a JSON array in the CDP/Puppeteer format or a Netscape `cookies.txt` (`serve`, `fetch` and `mcp`).
