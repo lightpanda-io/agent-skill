@@ -11,8 +11,11 @@ This skill covers Lightpanda's interfaces and when to use them:
 | **MCP server** | Agent workflows, interactive browsing, form filling |
 | **CLI fetch** | Quick one-off page extraction |
 | **CDP server** | Custom automation with Playwright/Puppeteer |
+| **WebDriver server** (Classic and BiDi) | Selenium, or Puppeteer over BiDi |
 | **Agent mode** | Natural-language tasks, or authoring a PandaScript to save |
 | **Saved scripts (PandaScript)** | Repeating a task deterministically, token-free |
+
+[Lightpanda Cloud](https://lightpanda.io/docs/run-on-lightpanda-cloud/getting-started) hosts the MCP and CDP servers, plus an HTTP API, for agents that can't install a binary or keep a process running.
 
 A companion sub-skill, [`pandascript`](pandascript/SKILL.md), covers writing PandaScript — the deterministic replay-script format run with `lightpanda run` (no LLM call).
 
@@ -49,7 +52,7 @@ Homebrew, AUR, and `.deb` builds: see the [install docs](https://lightpanda.io/d
 
 ### MCP server (optional)
 
-The MCP server gives your agent live, interactive browsing — structured tools it calls mid-task (navigate, click, extract, wait, …) against a persistent session. It's one of the five interfaces above, not a requirement.
+The MCP server gives your agent live, interactive browsing — structured tools it calls mid-task (navigate, click, extract, wait, …) against a persistent session. It's one of the interfaces above, not a requirement.
 
 Claude Code plugin users already have it. For any other MCP client, add this to your config:
 
