@@ -114,6 +114,7 @@ Where both `selector` and `backendNodeId` are accepted, either locates the targe
 
 **Navigation & search:**
 - `goto` — Navigate to a URL and load the page
+- `download` — Fetch a URL with the session's cookies into a file, for a PDF, spreadsheet or archive. Nothing is saved unless the status is 200-203; needs a loaded page
 - `search` — Run a web search and return results as markdown: a numbered list of `{title, url, snippet}`. Tries Brave, Tavily, Exa, then Keenable in order, each when its API key (`BRAVE_API_KEY`, `TAVILY_API_KEY`, `EXA_API_KEY` or `KEENABLE_API_KEY`) is set; Keenable also works without a key through its public endpoint (rate-limited per client IP); `--block-urls` applies: results whose URL matches are dropped, and a query that matches returns `No results.`
 
 **Reading the page** (all accept an optional `url` to navigate first, saving a separate `goto` call):
