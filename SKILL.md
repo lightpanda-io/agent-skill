@@ -326,6 +326,9 @@ Lightpanda exposes a custom `LP` domain via CDP with agent-optimized methods not
 - `LP.configureLoading` — Toggle iframe, worker, external-stylesheet, and image loading per session. Params: `subFrame`, `worker`, `externalStylesheets`, `images` (each optional)
 - `LP.version` — Return the running Lightpanda version
 
+**Downloads:**
+- `LP.downloadData` event — After `Browser.setDownloadBehavior` with `behavior: "stream"` and `eventsEnabled: true` (a Lightpanda extension), a download comes as `LP.downloadData` events (`guid`, base64 `data`) instead of a file on disk. `Browser.downloadWillBegin` adds the download's `contentType`
+
 **Example using CDP session with Playwright:**
 ```javascript
 const client = await context.newCDPSession(page);
