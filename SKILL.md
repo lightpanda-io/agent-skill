@@ -153,6 +153,10 @@ A `url` already loaded (current or originally requested) is read without reloadi
 - `getEnv` — Read an `LP_*` environment variable, or list the set `LP_*` names
 - `consoleLogs` — Get buffered console.log/warn/error messages, then clear the buffer
 
+**Page tools (WebMCP):**
+- `pageTools` — List the tools the page registers for agents through WebMCP (`navigator.modelContext.registerTool`). A page tool runs the site's own code and can be more reliable than driving its UI; many pages register them after `load`
+- `callPageTool` — Call one of them by name; treat a tool without `readOnlyHint` like a form submit
+
 **Session** (relevant with the HTTP transport, below):
 - `save` — Save the session as a reusable PandaScript (see the Saved Scripts section)
 - `session_new` — Create a new isolated browser session (its own page, cookies, memory) and return its id
