@@ -46,6 +46,11 @@ The script runs in its **own V8 context** — neither the page nor Node.js:
 | `page.press(selector, key)` | Selector first! `page.press("Enter")` binds "Enter" to `selector` and fails — use `page.press(null, "Enter")` or `page.press({ key: "Enter" })`. |
 | `page.selectOption(selector, value)` |  |
 | `page.setChecked(selector[, checked])` | `checked` defaults to `true`. |
+| `page.download([{ url, path }])` | Sends the session's cookies, so authenticated downloads work. Nothing is written unless the status is 200-203, and a failed download leaves `path` as it was. |
+| `page.callPageTool([{ name, arguments }])` | Runs a tool the page registered through WebMCP; returns its text result. |
+| `page.classify(questions[, { selector, presets }])` | Classifies page state or candidate elements via TypeSafe Jev: an array of categories, or an object of presets and questions. Replay calls Jev live and needs `TYPESAFE_API_KEY`. |
+| `page.acceptCookies([{ prefer, selectors }])` | Clicks the consent control Jev picks, then re-reads the page to check the banner went. Pass the `selectors` from an earlier result to click them with no model call; otherwise needs `TYPESAFE_API_KEY`. `prefer`: one of `"accept"`, `"reject"`. |
+| `page.login([{ password, username, usernameSelector, passwordSelector, submitSelector, nextSelector, decideOnly }])` | Fills the sign-in fields Jev picks and submits. Credentials go in as `$LP_*` placeholders. Pass the `*Selector` fields from an earlier result to replay with no model call; otherwise needs `TYPESAFE_API_KEY`. |
 
 Options (the trailing `{ … }` object; every option may be omitted):
 
@@ -56,6 +61,11 @@ Options (the trailing `{ … }` object; every option may be omitted):
 - `waitForSelector`: `timeout` — Optional timeout in milliseconds. Defaults to 5000, or 15000 when the page has not reached 'load' yet.
 - `waitForScript`: `timeout` — Optional timeout in milliseconds. Defaults to 5000, or 15000 when the page has not reached 'load' yet.
 - `waitForState`: `timeout` — Optional timeout in milliseconds. Defaults to 5000.
+- `download`: `url` — Absolute http(s) URL to fetch. `path` — Relative path (no '..' segments) to save the response body to. Created or overwritten. The response reports the absolute location.
+- `callPageTool`: `name` — Tool name, as `pageTools` lists it. `arguments` — Optional. The tool's input, matching its `inputSchema`. Defaults to {}.
+- `classify`: `selector` — Optional CSS selector to classify a specific element subtree instead of the full page `presets` — Also ask every preset in the same call, each answered under its own name beside the questions. Needs the object form.
+- `acceptCookies`: `prefer` — Whether to accept the cookies or refuse all non-essential ones. Defaults to 'accept'. `selectors` — Optional CSS selectors of the controls to click in order, from an earlier call's result. Clicked without asking the model; one that is not on the page stops the clicking there.
+- `login`: `password` — The password, as a $LP_* placeholder. `username` — The username, email or other identifier, as a $LP_* placeholder. Omit on a page that asks only for the password. `usernameSelector` — Optional CSS selector of the identifier field, from an earlier call's result. Given with passwordSelector, the fields are filled with no model call. `passwordSelector` — Optional CSS selector of the password field, from an earlier call's result. Must name an input[type=password]. `submitSelector` — Optional CSS selector of the control that submits the form. Without it, Enter is pressed in the filled field. `nextSelector` — Optional CSS selector of the control that submits the username on a page that asks for the password on a later step. Without it, Enter is pressed in the username field. `decideOnly` — Report which fields would be used and type nothing. For checking the picks on a page without sending credentials.
 
 Calling convention: leading positionals + optional trailing options object, or one object with everything (`page.waitForSelector("#row", { timeout: 2000 })` ≡ `page.waitForSelector({ selector: "#row", timeout: 2000 })`). A bare option positional (`page.waitForSelector("#row", 2000)`) and a field passed both ways are `invalid arguments`. `null` skips a positional. Arguments must be JSON-serializable.
 
