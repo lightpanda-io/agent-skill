@@ -127,7 +127,7 @@ A `url` already loaded (current or originally requested) is read without reloadi
 - `nodeDetails` — Tag, role, name, attributes, and state for a node by `backendNodeId`, plus a ready-to-use CSS selector
 - `findElement` — Find interactive elements by role and/or accessible name
 - `interactiveElements` — List all interactive elements on the page
-- `structuredData` — Extract structured data (JSON-LD, OpenGraph, etc.)
+- `structuredData` — Extract structured data (JSON-LD, microdata, OpenGraph, etc.)
 - `detectForms` — Detect forms with their field structure and types
 
 **Data extraction and scripting:**
@@ -201,7 +201,7 @@ lightpanda fetch --dump markdown --wait-until networkidle https://example.com
 
 ### Options
 
-- `--dump` — Output format: `html`, `markdown`, `png`, `pdf`, `semantic_tree`, `semantic_tree_text`, `structured_data` (JSON-LD, OpenGraph, Twitter card, meta and link tags as JSON) (the MCP equivalent of `semantic_tree*` is named `tree`)
+- `--dump` — Output format: `html`, `markdown`, `png`, `pdf`, `semantic_tree`, `semantic_tree_text`, `structured_data` (JSON-LD, microdata, OpenGraph, Twitter card, meta and link tags as JSON) (the MCP equivalent of `semantic_tree*` is named `tree`)
 - `--wait-until` — Wait strategy: `load` (default; none when `--wait-selector` or `--wait-script` is set), `domcontentloaded`, `networkalmostidle`, `networkidle`, `done`
 - `--wait-ms` — Max wait time in milliseconds (default: 5000)
 - `--wait-selector` — Wait for a CSS selector to appear, checked after `--wait-until`
@@ -305,7 +305,7 @@ Lightpanda exposes a custom `LP` domain via CDP with agent-optimized methods not
 - `LP.dump` — Render the page, or a subtree, to `html`, `markdown`, `png`, or `pdf`. Params: `format` (required), `strip`, `selector`, `backendNodeId`, `maxBytes` (text formats only)
 - `LP.getMarkdown` — **Deprecated**, equivalent to `LP.dump` with `format: "markdown"`. Params: `nodeId` (optional)
 - `LP.getSemanticTree` — Get semantic tree representation. Params: `format` (`text` for text format), `prune` (default: true), `interactiveOnly`, `backendNodeId`, `maxDepth`
-- `LP.getStructuredData` — Extract structured data (JSON-LD, OpenGraph, etc.)
+- `LP.getStructuredData` — Extract structured data (JSON-LD, microdata, OpenGraph, etc.)
 
 **Interactive elements:**
 - `LP.getInteractiveElements` — Find all interactive elements. Params: `nodeId` (optional)
