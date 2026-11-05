@@ -165,6 +165,7 @@ A `url` already loaded (current or originally requested) is read without reloadi
 
 **Session** (relevant with the HTTP transport, below):
 - `save` — Save the session as a reusable PandaScript (see the Saved Scripts section)
+- `run` — Run a PandaScript in this session (its source, or the `path` `save` wrote), as `lightpanda run` does; cookies and storage stay in the session
 - `session_new` — Create a new isolated browser session (its own page, cookies, memory) and return its id
 - `session_list` — List active sessions with their id and current URL
 - `session_close` — Close a session (the `default` session cannot be closed)
@@ -369,6 +370,8 @@ Replay with no LLM involved:
 ```bash
 lightpanda run script.js
 ```
+
+From an MCP session, the `run` tool does the same in that session.
 
 For the scripting semantics (primitives, the extraction schema, common errors), see the `pandascript` skill. It's generated from the runtime's own tool schemas, so it can't drift the way hand-written prose can. The [PandaScript guide](https://lightpanda.io/docs/usage/pandascript) covers the same ground for a human reading this repo without a skill loaded.
 
