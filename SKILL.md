@@ -136,7 +136,7 @@ A `url` already loaded (current or originally requested) is read without reloadi
 - `classify` — Answer questions about the page, or pick a category, e.g. presets like `isCaptcha`, `isLoginWall`, `isPaywall`
 
 **Interacting with the page** (each returns the page URL, HTTP status and title):
-- `click` — Click an interactive element
+- `click` — Click an interactive element; the result says so when the target is disabled (no click happened) or hidden (no user could click it)
 - `fill` — Fill text into an input, textarea, or select element
 - `scroll` — Scroll the page or a specific element
 - `hover` — Hover over an element, triggering mouseover/mouseenter
