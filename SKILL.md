@@ -312,6 +312,7 @@ Lightpanda exposes a custom `LP` domain via CDP with agent-optimized methods not
 - `LP.detectForms` — Detect and extract form information
 - `LP.getNodeDetails` — Get detailed info about a node. Params: `backendNodeId` (required)
 - `LP.waitForSelector` — Wait for a CSS selector match. Params: `selector` (required), `timeout` (default: 5000 ms, or 15000 ms before the page reaches `load`)
+- `LP.waitUntil`: wait for a load state with no navigation, the same states as `--wait-until` (`settled` included). Params: `until` (required), `timeout` (same default as `LP.waitForSelector`); fails with `Timeout`
 
 **Actions:**
 - `LP.clickNode` — Click a node. Params: `nodeId` or `backendNodeId`
@@ -323,7 +324,7 @@ Lightpanda exposes a custom `LP` domain via CDP with agent-optimized methods not
 - `LP.getContentSignal` — Read the current host's advisory `Content-Signal` robots.txt preferences ([contentsignals.org](https://contentsignals.org)). `available` is false unless `--obey-robots` populated the store.
 - `LP.handleJavaScriptDialog` — Pre-arm the response (`accept`, optional `promptText`) for the *next* `window.alert`/`confirm`/`prompt`. Lightpanda auto-dismisses dialogs headlessly, so this must be sent *before* the JS that opens the dialog, not reactively like standard CDP's `Page.handleJavaScriptDialog`.
 - `LP.configureCDP` — Toggle CDP compatibility behaviors. Params: `disableSetCacheDisabled`, `obeyRobots`, `httpVersion` (`auto`/`1.1`) (each optional)
-- `LP.configureLoading` — Toggle iframe, worker, external-stylesheet, and image loading per session. Params: `subFrame`, `worker`, `externalStylesheets`, `images` (each optional)
+- `LP.configureLoading` — Toggle iframe, worker, external-stylesheet, image, and beacon loading per session. Params: `subFrame`, `worker`, `externalStylesheets`, `images`, `beacon` (each optional)
 - `LP.version` — Return the running Lightpanda version
 
 **Downloads:**
