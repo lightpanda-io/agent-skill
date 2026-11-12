@@ -151,7 +151,7 @@ A `url` already loaded (current or originally requested) is read without reloadi
 **Waiting:**
 - `waitForSelector` — Wait for a CSS selector to match
 - `waitForScript` — Wait until a JS expression returns truthy, re-checked each tick
-- `waitForState` — Wait for a load state (`load`, `domcontentloaded`, `networkalmostidle`, `networkidle`, `done`) with no navigation
+- `waitForState` — Wait for a load state (`load`, `domcontentloaded`, `networkalmostidle`, `networkidle`, `settled`, `done`) with no navigation
 
 **State and debugging:**
 - `getUrl` — Get the URL currently loaded in the browser
@@ -202,7 +202,7 @@ lightpanda fetch --dump markdown --wait-until networkidle https://example.com
 ### Options
 
 - `--dump` — Output format: `html`, `markdown` (asks the server for markdown first and dumps it as-is when it gets some, logged as "markdown served"; not with `--dump-selector`, `--wait-selector`, `--wait-script` or `--inject-script`), `png`, `pdf`, `semantic_tree`, `semantic_tree_text`, `structured_data` (JSON-LD, microdata, OpenGraph, Twitter card, meta and link tags as JSON) (the MCP equivalent of `semantic_tree*` is named `tree`)
-- `--wait-until` — Wait strategy: `load` (default; none when `--wait-selector` or `--wait-script` is set), `domcontentloaded`, `networkalmostidle`, `networkidle`, `done`
+- `--wait-until` — Wait strategy: `load` (default; none when `--wait-selector` or `--wait-script` is set), `domcontentloaded`, `networkalmostidle`, `networkidle`, `settled` (experimental: load, then the requests and short timers page-load work started), `done`
 - `--wait-ms` — Max wait time in milliseconds (default: 5000)
 - `--wait-selector` — Wait for a CSS selector to appear, checked after `--wait-until`
 - `--wait-script` — Wait for a JS expression to return truthy, checked after `--wait-until`
