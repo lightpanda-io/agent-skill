@@ -110,7 +110,7 @@ Add to your MCP client configuration:
 
 ### Available MCP Tools
 
-Where both `selector` and `backendNodeId` are accepted, either locates the target element — `selector` is preferred for reproducibility (e.g. in a saved script), `backendNodeId` comes from a prior `tree` or `findElement` call.
+Where both `selector` and `backendNodeId` are accepted, either locates the target element — `selector` is preferred for reproducibility (e.g. in a saved script), `backendNodeId` comes from a prior `tree` or `findElement` call. Selectors are plain CSS only: Playwright-style prefixes (`text=`, `role=`, `xpath=`) fail with `InvalidSelector`; use `findElement(role, name)` for text or role lookups.
 
 **Navigation & search:**
 - `goto` — Navigate to a URL and load the page
