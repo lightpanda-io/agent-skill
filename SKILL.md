@@ -422,7 +422,7 @@ When and why to use each, see Best Practices below.
     - "A <kind> bot challenge blocked some of the page's own requests: content they load is missing." (replaces the 403/429 note)
 
   `goto` fails only when no page arrived: a DNS or connection error (e.g. `CouldntResolveHost`), or `NavigationTimeout: no response arrived before the timeout, so the page is empty.`
-* **CDP connection limits:** Up to 16 simultaneous CDP connections per process by default (tune with `--cdp-max-connections`). Each connection supports 1 context and 1 page (a second `Target.createBrowserContext` fails with "Cannot have more than one browser context at a time"). For more parallelism than that, start multiple processes on different ports — Lightpanda starts instantly, so this is fast.
+* **CDP connection limits:** Up to 16 simultaneous CDP connections per process by default (tune with `--cdp-max-connections`). Each connection supports 1 context and up to 16 pages, which share the context's cookies and storage. A second `Target.createBrowserContext` fails with "Cannot have more than one browser context at a time"; a 17th page fails with "Cannot have more than 16 targets at a time". For more parallelism than that, start multiple processes on different ports — Lightpanda starts instantly, so this is fast.
 * **CDP state management:** The browser resets all state on CDP connection close. Keep the WebSocket connection open throughout a session. On each connection, always create a new context and page, and close both when done.
 * The MCP server handles connection management automatically — these CDP limits don't apply when using MCP tools.
 * To report an issue, open a GitHub issue at https://github.com/lightpanda-io/browser/issues including:
