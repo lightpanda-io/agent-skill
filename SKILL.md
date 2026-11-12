@@ -135,7 +135,7 @@ A `url` already loaded (current or originally requested) is read without reloadi
 - `evaluate` — Execute JavaScript in the page context; a bare trailing expression yields its value, and top-level `await`/`return` are supported
 - `classify` — Answer questions about the page, or pick a category, e.g. presets like `isCaptcha`, `isLoginWall`, `isPaywall`
 
-**Interacting with the page** (each returns the page URL, HTTP status and title; an action that opens a new window, e.g. a `target=_blank` click, adds "Opened a new window; tools now act on it."):
+**Interacting with the page** (each returns the page URL, HTTP status and title):
 - `click` — Click an interactive element
 - `fill` — Fill text into an input, textarea, or select element
 - `scroll` — Scroll the page or a specific element
@@ -145,6 +145,8 @@ A `url` already loaded (current or originally requested) is read without reloadi
 - `setChecked` — Check or uncheck a checkbox or radio button
 - `acceptCookies` — Dismiss the cookie consent banner (`prefer`: `accept` or `reject`), check it went, and return JSON with the controls clicked
 - `login` — Sign in with `$LP_*` placeholders as credentials; fills, submits, checks whether it worked, and returns JSON with the selectors used
+
+An action that opens a new window, e.g. a `target=_blank` click, adds "Opened a new window; tools now act on it." to its result. A window opened later, after a fetch or a timer, does not become current: switch to it with the `popups` tool (State and debugging below).
 
 `classify`, `acceptCookies` and `login` ask TypeSafe System One (Jev) and need `TYPESAFE_API_KEY`, except `acceptCookies` and `login` given the selectors an earlier call returned (a recorded script replays with no model call). Without the key they fail with "<tool>: TYPESAFE_API_KEY environment variable is not set" (agent mode falls back to its chat model).
 
@@ -158,6 +160,7 @@ A `url` already loaded (current or originally requested) is read without reloadi
 - `getCookies` — Get cookies for the current page's host, another `url`, or `all`
 - `getEnv` — Read an `LP_*` environment variable, or list the set `LP_*` names
 - `consoleLogs` — Get buffered console.log/warn/error messages, then clear the buffer
+- `popups`: list the windows the page opened (`window.open` or `target=_blank`), main page first; `follow` an id to make that window current, or the main page's id to switch back
 
 **Page tools (WebMCP):**
 - `pageTools` — List the tools the page registers for agents through WebMCP (`navigator.modelContext.registerTool`). A page tool runs the site's own code and can be more reliable than driving its UI; many pages register them after `load`
