@@ -166,6 +166,10 @@ An action that opens a new window, e.g. a `target=_blank` click, adds "Opened a 
 - `pageTools` — List the tools the page registers for agents through WebMCP (`navigator.modelContext.registerTool`). A page tool runs the site's own code and can be more reliable than driving its UI; many pages register them after `load`
 - `callPageTool` — Call one of them by name; treat a tool without `readOnlyHint` like a form submit
 
+When the page adds or removes tools, the next tool result starts with a note:
+- Tools registered: "The page registers WebMCP tools; callPageTool runs one:", followed by the full current list as JSON
+- No tools left: "The page no longer registers WebMCP tools."
+
 **Session** (relevant with the HTTP transport, below):
 - `save` — Save the session as a reusable PandaScript (see the Saved Scripts section)
 - `run` — Run a PandaScript in this session (its source, or the `path` `save` wrote), as `lightpanda run` does; cookies and storage stay in the session
