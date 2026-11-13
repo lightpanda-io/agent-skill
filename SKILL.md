@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: "Linux and macOS only (Windows via WSL2). Installs its own binary via scripts/install.sh — not run automatically by the plugin installer, so run it once before first use."
 allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/install.sh), Bash(command -v lightpanda), Bash(lightpanda *)
 metadata:
-  version: "2.1.3"
+  version: "2.1.4"
   author: Lightpanda
   source: "https://github.com/lightpanda-io/agent-skill"
   homepage: "https://github.com/lightpanda-io/agent-skill"
@@ -110,7 +110,7 @@ Add to your MCP client configuration:
 
 ### Available MCP Tools
 
-Where both `selector` and `backendNodeId` are accepted, either locates the target element — `selector` is preferred for reproducibility (e.g. in a saved script), `backendNodeId` comes from a prior `tree` or `findElement` call.
+Where both `selector` and `backendNodeId` are accepted, either locates the target element — `selector` is preferred for reproducibility (e.g. in a saved script), `backendNodeId` comes from a prior `tree` or `findElement` call. Selectors are plain CSS only: Playwright-style prefixes (`text=`, `role=`, `xpath=`) fail with `InvalidSelector`; use `findElement(role, name)` for text or role lookups.
 
 **Navigation & search:**
 - `goto` — Navigate to a URL and load the page
@@ -135,8 +135,8 @@ A `url` already loaded (current or originally requested) is read without reloadi
 - `evaluate` — Execute JavaScript in the page context; a bare trailing expression yields its value, and top-level `await`/`return` are supported
 - `classify` — Answer questions about the page, or pick a category, e.g. presets like `isCaptcha`, `isLoginWall`, `isPaywall`
 
-**Interacting with the page** (each returns the page URL, HTTP status and title; an action that opens a new window, e.g. a `target=_blank` click, adds "Opened a new window; tools now act on it."):
-- `click` — Click an interactive element
+**Interacting with the page** (each returns the page URL, HTTP status and title):
+- `click` — Click an interactive element; the result says so when the target is disabled (no click happened) or hidden (no user could click it)
 - `fill` — Fill text into an input, textarea, or select element
 - `scroll` — Scroll the page or a specific element
 - `hover` — Hover over an element, triggering mouseover/mouseenter
@@ -146,22 +146,29 @@ A `url` already loaded (current or originally requested) is read without reloadi
 - `acceptCookies` — Dismiss the cookie consent banner (`prefer`: `accept` or `reject`), check it went, and return JSON with the controls clicked
 - `login` — Sign in with `$LP_*` placeholders as credentials; fills, submits, checks whether it worked, and returns JSON with the selectors used
 
+An action that opens a new window, e.g. a `target=_blank` click, adds "Opened a new window; tools now act on it." to its result. A window opened later, after a fetch or a timer, does not become current: switch to it with the `popups` tool (State and debugging below).
+
 `classify`, `acceptCookies` and `login` ask TypeSafe System One (Jev) and need `TYPESAFE_API_KEY`, except `acceptCookies` and `login` given the selectors an earlier call returned (a recorded script replays with no model call). Without the key they fail with "<tool>: TYPESAFE_API_KEY environment variable is not set" (agent mode falls back to its chat model).
 
 **Waiting:**
 - `waitForSelector` — Wait for a CSS selector to match
 - `waitForScript` — Wait until a JS expression returns truthy, re-checked each tick
-- `waitForState` — Wait for a load state (`load`, `domcontentloaded`, `networkalmostidle`, `networkidle`, `done`) with no navigation
+- `waitForState` — Wait for a load state (`load`, `domcontentloaded`, `networkalmostidle`, `networkidle`, `settled`, `done`) with no navigation
 
 **State and debugging:**
 - `getUrl` — Get the URL currently loaded in the browser
 - `getCookies` — Get cookies for the current page's host, another `url`, or `all`
 - `getEnv` — Read an `LP_*` environment variable, or list the set `LP_*` names
 - `consoleLogs` — Get buffered console.log/warn/error messages, then clear the buffer
+- `popups`: list the windows the page opened (`window.open` or `target=_blank`), main page first; `follow` an id to make that window current, or the main page's id to switch back
 
 **Page tools (WebMCP):**
 - `pageTools` — List the tools the page registers for agents through WebMCP (`navigator.modelContext.registerTool`). A page tool runs the site's own code and can be more reliable than driving its UI; many pages register them after `load`
 - `callPageTool` — Call one of them by name; treat a tool without `readOnlyHint` like a form submit
+
+When the page adds or removes tools, the next tool result starts with a note:
+- Tools registered: "The page registers WebMCP tools; callPageTool runs one:", followed by the full current list as JSON
+- No tools left: "The page no longer registers WebMCP tools."
 
 **Session** (relevant with the HTTP transport, below):
 - `save` — Save the session as a reusable PandaScript (see the Saved Scripts section)
@@ -202,7 +209,7 @@ lightpanda fetch --dump markdown --wait-until networkidle https://example.com
 ### Options
 
 - `--dump` — Output format: `html`, `markdown` (asks the server for markdown first and dumps it as-is when it gets some, logged as "markdown served"; not with `--dump-selector`, `--wait-selector`, `--wait-script` or `--inject-script`), `png`, `pdf`, `semantic_tree`, `semantic_tree_text`, `structured_data` (JSON-LD, microdata, OpenGraph, Twitter card, meta and link tags as JSON) (the MCP equivalent of `semantic_tree*` is named `tree`)
-- `--wait-until` — Wait strategy: `load` (default; none when `--wait-selector` or `--wait-script` is set), `domcontentloaded`, `networkalmostidle`, `networkidle`, `done`
+- `--wait-until` — Wait strategy: `load` (default; none when `--wait-selector` or `--wait-script` is set), `domcontentloaded`, `networkalmostidle`, `networkidle`, `settled` (experimental: load, then the requests and short timers page-load work started), `done`
 - `--wait-ms` — Max wait time in milliseconds (default: 5000)
 - `--wait-selector` — Wait for a CSS selector to appear, checked after `--wait-until`
 - `--wait-script` — Wait for a JS expression to return truthy, checked after `--wait-until`
@@ -247,7 +254,7 @@ Options:
 - `--cdp-max-connections` — Max simultaneous CDP connections (default: 16)
 - `--cdp-max-message-size` — Max incoming WebSocket message size (default: 1MB)
 - `--disable-metrics` — Disable the `/metrics` Prometheus endpoint
-- `--advertise-host` — Host to advertise in e.g. the `/json/version` response, useful when `--host` is `0.0.0.0`. It is also the one hostname, besides IP literals and `localhost`, that a WebSocket upgrade accepts in its `Host` header (e.g. a Docker service name); any other name gets a 403 and the log line `rejected websocket host`
+- `--advertise-host` — Host to advertise in e.g. the `/json/version` response, useful when `--host` is `0.0.0.0`. It is also the one hostname, besides IP literals and `localhost`, that any request, WebSocket upgrades included, accepts in its `Host` header (e.g. a Docker service name); any other name gets a 403 and the log line `rejected request host`
 - `--remote-allow-origins <origin>`: accept this `Origin` header (or `*` for any) on CDP and BiDi WebSocket upgrades. Repeatable. By default an upgrade that sends an `Origin` header gets a 403 and the log line `rejected websocket origin`; upgrades without one are always accepted
 - `--unix-socket <path>`: listen on this absolute Unix-domain socket path (mode 0600) instead of TCP. Can't be combined with `--host`, `--port` or `--advertise-host`
 
@@ -312,6 +319,7 @@ Lightpanda exposes a custom `LP` domain via CDP with agent-optimized methods not
 - `LP.detectForms` — Detect and extract form information
 - `LP.getNodeDetails` — Get detailed info about a node. Params: `backendNodeId` (required)
 - `LP.waitForSelector` — Wait for a CSS selector match. Params: `selector` (required), `timeout` (default: 5000 ms, or 15000 ms before the page reaches `load`)
+- `LP.waitUntil`: wait for a load state with no navigation, the same states as `--wait-until` (`settled` included). Params: `until` (required), `timeout` (same default as `LP.waitForSelector`); fails with `Timeout`
 
 **Actions:**
 - `LP.clickNode` — Click a node. Params: `nodeId` or `backendNodeId`
@@ -323,7 +331,7 @@ Lightpanda exposes a custom `LP` domain via CDP with agent-optimized methods not
 - `LP.getContentSignal` — Read the current host's advisory `Content-Signal` robots.txt preferences ([contentsignals.org](https://contentsignals.org)). `available` is false unless `--obey-robots` populated the store.
 - `LP.handleJavaScriptDialog` — Pre-arm the response (`accept`, optional `promptText`) for the *next* `window.alert`/`confirm`/`prompt`. Lightpanda auto-dismisses dialogs headlessly, so this must be sent *before* the JS that opens the dialog, not reactively like standard CDP's `Page.handleJavaScriptDialog`.
 - `LP.configureCDP` — Toggle CDP compatibility behaviors. Params: `disableSetCacheDisabled`, `obeyRobots`, `httpVersion` (`auto`/`1.1`) (each optional)
-- `LP.configureLoading` — Toggle iframe, worker, external-stylesheet, and image loading per session. Params: `subFrame`, `worker`, `externalStylesheets`, `images` (each optional)
+- `LP.configureLoading` — Toggle iframe, worker, external-stylesheet, image, and beacon loading per session. Params: `subFrame`, `worker`, `externalStylesheets`, `images`, `beacon` (each optional)
 - `LP.version` — Return the running Lightpanda version
 
 **Downloads:**
@@ -421,7 +429,7 @@ When and why to use each, see Best Practices below.
     - "A <kind> bot challenge blocked some of the page's own requests: content they load is missing." (replaces the 403/429 note)
 
   `goto` fails only when no page arrived: a DNS or connection error (e.g. `CouldntResolveHost`), or `NavigationTimeout: no response arrived before the timeout, so the page is empty.`
-* **CDP connection limits:** Up to 16 simultaneous CDP connections per process by default (tune with `--cdp-max-connections`). Each connection supports 1 context and 1 page (a second `Target.createBrowserContext` fails with "Cannot have more than one browser context at a time"). For more parallelism than that, start multiple processes on different ports — Lightpanda starts instantly, so this is fast.
+* **CDP connection limits:** Up to 16 simultaneous CDP connections per process by default (tune with `--cdp-max-connections`). Each connection supports 1 context and up to 16 pages, which share the context's cookies and storage. A second `Target.createBrowserContext` fails with "Cannot have more than one browser context at a time"; a 17th page fails with "Cannot have more than 16 targets at a time". For more parallelism than that, start multiple processes on different ports — Lightpanda starts instantly, so this is fast.
 * **CDP state management:** The browser resets all state on CDP connection close. Keep the WebSocket connection open throughout a session. On each connection, always create a new context and page, and close both when done.
 * The MCP server handles connection management automatically — these CDP limits don't apply when using MCP tools.
 * To report an issue, open a GitHub issue at https://github.com/lightpanda-io/browser/issues including:
