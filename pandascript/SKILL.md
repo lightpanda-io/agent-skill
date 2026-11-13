@@ -32,7 +32,7 @@ The script runs in its **own V8 context** — neither the page nor Node.js:
 |------|-------|
 | `new Page()` | Makes a page object. No navigation yet — call `page.goto(url)` before any other method. Make several to navigate in parallel (fan-out, best practice 2). |
 | `page.close()` | Marks the page done; later method calls on it error. The page is otherwise reclaimed at script end. |
-| `await page.goto(url[, { timeout, waitUntil }])` | **Async — must be `await`ed.** Navigates the page (re-navigating reuses the same object). Waits for `load`. Rejects on navigation failure; a **timeout does NOT reject** (the page may still be usable). Default timeout 10000 ms. `waitUntil`: one of `"load"`, `"domcontentloaded"`, `"networkalmostidle"`, `"networkidle"`, `"done"`. |
+| `await page.goto(url[, { timeout, waitUntil }])` | **Async — must be `await`ed.** Navigates the page (re-navigating reuses the same object). Waits for `load`. Rejects on navigation failure; a **timeout does NOT reject** (the page may still be usable). Default timeout 10000 ms. `waitUntil`: one of `"load"`, `"domcontentloaded"`, `"networkalmostidle"`, `"networkidle"`, `"settled"`, `"done"`. |
 | `page.screenshot([{ path, selector, fullPage, strip, url, timeout }])` | `path` is required: writes a PNG of the text layout. |
 | `page.evaluate(script[, { url, timeout, save }])` | Page-side JS escape hatch; returns text (JSON for objects/arrays). |
 | `page.extract(schema)` | The only primitive returning a real JS value (object/array). The schema is its only argument. See schema below. |
@@ -41,7 +41,7 @@ The script runs in its **own V8 context** — neither the page nor Node.js:
 | `page.scroll([{ selector, x, y }])` |  |
 | `page.waitForSelector(selector[, { timeout }])` | `waitFor*` default timeout 5000 ms. |
 | `page.waitForScript(script[, { timeout }])` | Re-evaluates page JS until truthy. |
-| `page.waitForState(state[, { timeout }])` | `state`: one of `"load"`, `"domcontentloaded"`, `"networkalmostidle"`, `"networkidle"`, `"done"`. |
+| `page.waitForState(state[, { timeout }])` | `state`: one of `"load"`, `"domcontentloaded"`, `"networkalmostidle"`, `"networkidle"`, `"settled"`, `"done"`. |
 | `page.hover(selector)` |  |
 | `page.press(selector, key)` | Selector first! `page.press("Enter")` binds "Enter" to `selector` and fails — use `page.press(null, "Enter")` or `page.press({ key: "Enter" })`. |
 | `page.selectOption(selector, value)` |  |
