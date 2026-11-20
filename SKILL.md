@@ -309,7 +309,7 @@ Everything else (`page.title()`, `page.close()`, `context.close()`, `browser.clo
 Lightpanda exposes a custom `LP` domain via CDP with agent-optimized methods not available in standard Chrome DevTools Protocol. Use these via `page.evaluate` with CDP sessions or direct WebSocket messages.
 
 **Content extraction:**
-- `LP.dump` — Render the page, or a subtree, to `html`, `markdown`, `png`, or `pdf`. Params: `format` (required), `strip`, `selector`, `backendNodeId`, `maxBytes` (text formats only)
+- `LP.dump` — Render the page, or a subtree, to `html`, `markdown`, `png`, or `pdf`. Params: `format` (required), `strip`, `selector`, `backendNodeId`, `maxBytes` (text formats only), `withFrames` (`html` only: writes each iframe's document inside its `<iframe>`)
 - `LP.getMarkdown` — **Deprecated**, equivalent to `LP.dump` with `format: "markdown"`. Params: `nodeId` (optional)
 - `LP.getSemanticTree` — Get semantic tree representation. Params: `format` (`text` for text format), `prune` (default: true), `interactiveOnly`, `backendNodeId`, `maxDepth`
 - `LP.getStructuredData` — Extract structured data (JSON-LD, microdata, OpenGraph, etc.)
