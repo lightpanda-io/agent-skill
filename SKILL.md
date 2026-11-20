@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: "Linux and macOS only (Windows via WSL2). Installs its own binary via scripts/install.sh — not run automatically by the plugin installer, so run it once before first use."
 allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/install.sh), Bash(command -v lightpanda), Bash(lightpanda *)
 metadata:
-  version: "2.1.4"
+  version: "2.1.5"
   author: Lightpanda
   source: "https://github.com/lightpanda-io/agent-skill"
   homepage: "https://github.com/lightpanda-io/agent-skill"
@@ -93,6 +93,8 @@ claude mcp add lightpanda -- lightpanda mcp
 
 To respect `robots.txt`, append `--obey-robots` to the command.
 
+To keep unused tool definitions out of the context, expose only the tools you need with `--tools goto,tree,click` (`lightpanda mcp --list-tools` prints every name in that format). It is not a sandbox: a listed tool keeps its full reach.
+
 ### Setup for other MCP clients
 
 Add to your MCP client configuration:
@@ -148,7 +150,7 @@ A `url` already loaded (current or originally requested) is read without reloadi
 
 An action that opens a new window, e.g. a `target=_blank` click, adds "Opened a new window; tools now act on it." to its result. A window opened later, after a fetch or a timer, does not become current: switch to it with the `popups` tool (State and debugging below).
 
-`classify`, `acceptCookies` and `login` ask TypeSafe System One (Jev) and need `TYPESAFE_API_KEY`, except `acceptCookies` and `login` given the selectors an earlier call returned (a recorded script replays with no model call). Without the key they fail with "<tool>: TYPESAFE_API_KEY environment variable is not set" (agent mode falls back to its chat model).
+`classify`, `acceptCookies` and `login` ask a decision model. `acceptCookies` and `login` skip it when given the selectors an earlier call returned, so a recorded script replays with no model call. The model needs `TYPESAFE_API_KEY`, or `GOOGLE_API_KEY`/`GEMINI_API_KEY` with `LIGHTPANDA_DECISION_PROVIDER=gemini`. Without a key, a call that asks it fails with "<tool>: no decision model key is set; set TYPESAFE_API_KEY, or GOOGLE_API_KEY/GEMINI_API_KEY with LIGHTPANDA_DECISION_PROVIDER=gemini". Agent mode falls back to its chat model.
 
 **Waiting:**
 - `waitForSelector` — Wait for a CSS selector to match
@@ -185,7 +187,7 @@ When the page adds or removes tools, the next tool result starts with a note:
 
 ### Multiple sessions (HTTP transport)
 
-Pass `--port` to serve MCP over HTTP instead of stdio, giving each client an independent browsing session, each on its own thread so sessions run in parallel: `lightpanda mcp --port 8000`. An `initialize` call with no `Mcp-Session-Id` header mints a fresh session and returns its id in the response header; reuse that id on later calls (or share it with another client). Calls with no session header fall back to the always-present `default` session. Manage sessions explicitly with `session_new` / `session_list` / `session_close`. Sessions live until closed; `--http-session-timeout <seconds>` closes idle ones (a later call with that id gets 404, so start a new session). Over stdio (the Claude Code setup above), there's only ever the one `default` session, and the `session_*` tools return "multiple sessions require the HTTP transport (start with --port)". Give a task that reads untrusted content its own session (see **Best Practices**).
+Pass `--port` to serve MCP over HTTP instead of stdio, giving each client an independent browsing session, each on its own thread so sessions run in parallel: `lightpanda mcp --port 8000`. An `initialize` call with no `Mcp-Session-Id` header mints a fresh session and returns its id in the response header; reuse that id on later calls (or share it with another client). Calls with no session header fall back to the always-present `default` session. Manage sessions explicitly with `session_new` / `session_list` / `session_close`. A session lives until `session_close`. `--http-session-timeout <seconds>` also closes idle ones. A call with a timed-out id gets 404: start a new session. An idle `default` session only loses its pages and keeps its cookies. Over stdio (the Claude Code setup above), there's only ever the one `default` session, and the `session_*` tools return "multiple sessions require the HTTP transport (start with --port)". Give a task that reads untrusted content its own session (see **Best Practices**).
 
 Add `--cdp-port <INT>` to also run a CDP (WebSocket) server on the same process — useful if something in your workflow needs raw CDP (e.g. Playwright/Puppeteer) alongside MCP. It can't be combined with `--port`, since both share one network listener.
 
@@ -309,7 +311,7 @@ Everything else (`page.title()`, `page.close()`, `context.close()`, `browser.clo
 Lightpanda exposes a custom `LP` domain via CDP with agent-optimized methods not available in standard Chrome DevTools Protocol. Use these via `page.evaluate` with CDP sessions or direct WebSocket messages.
 
 **Content extraction:**
-- `LP.dump` — Render the page, or a subtree, to `html`, `markdown`, `png`, or `pdf`. Params: `format` (required), `strip`, `selector`, `backendNodeId`, `maxBytes` (text formats only)
+- `LP.dump` — Render the page, or a subtree, to `html`, `markdown`, `png`, or `pdf`. Params: `format` (required), `strip`, `selector`, `backendNodeId`, `maxBytes` (text formats only), `withFrames` (`html` only: writes each iframe's document inside its `<iframe>`)
 - `LP.getMarkdown` — **Deprecated**, equivalent to `LP.dump` with `format: "markdown"`. Params: `nodeId` (optional)
 - `LP.getSemanticTree` — Get semantic tree representation. Params: `format` (`text` for text format), `prune` (default: true), `interactiveOnly`, `backendNodeId`, `maxDepth`
 - `LP.getStructuredData` — Extract structured data (JSON-LD, microdata, OpenGraph, etc.)

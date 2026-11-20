@@ -18,7 +18,7 @@ The script runs in its **own V8 context** — neither the page nor Node.js:
 - `Page` is the only global. `new Page()` makes a page and `await page.goto(url)` navigates it; every other primitive is a **method on that page**: `const page = new Page(); await page.goto(url); page.extract({...}); page.click(sel);`.
 - No `window`, `document`, DOM, `localStorage` — read pages with `page.extract(...)`, run page-side JS only via `page.evaluate("...")`.
 - No `require`, `process`, `fs`, npm. Standard ECMAScript built-ins only (`JSON`, `Map`, template literals, …).
-- `page.goto(...)` is **async — always `await` it**. Page methods are **synchronous**: `const data = page.extract({...})`, never `await page.extract(...)`. The script body runs as an async function, so top-level `await` is allowed.
+- `page.goto(...)` and `page.evaluate(...)` are **async — always `await` them**. The other page methods are **synchronous**: `const data = page.extract({...})`, never `await page.extract(...)`. The script body runs as an async function, so top-level `await` is allowed.
 - **Re-navigating reuses the same page**: `await page.goto(url2)` keeps `page` valid and points it at the new URL, discarding the old page — read it before navigating away. Independent URLs don't share a page: make a `new Page()` for each and load them in parallel (fan-out, best practice 2).
 - Page `evaluate("...")` cannot see script variables — interpolate values into the string. Script code cannot see page variables.
 - Variables persist across navigations within one run, so cross-page aggregation is plain JS.
@@ -32,9 +32,9 @@ The script runs in its **own V8 context** — neither the page nor Node.js:
 |------|-------|
 | `new Page()` | Makes a page object. No navigation yet — call `page.goto(url)` before any other method. Make several to navigate in parallel (fan-out, best practice 2). |
 | `page.close()` | Marks the page done; later method calls on it error. The page is otherwise reclaimed at script end. |
-| `await page.goto(url[, { timeout, waitUntil }])` | **Async — must be `await`ed.** Navigates the page (re-navigating reuses the same object). Waits for `load`. Rejects on navigation failure; a **timeout does NOT reject** (the page may still be usable). Default timeout 10000 ms. `waitUntil`: one of `"load"`, `"domcontentloaded"`, `"networkalmostidle"`, `"networkidle"`, `"settled"`, `"done"`. |
+| `await page.goto(url[, { timeout, waitUntil }])` | **Async — must be `await`ed.** Navigates the page (re-navigating reuses the same object). Waits for `load`. Rejects on navigation failure or timeout. Default timeout 10000 ms. `waitUntil`: one of `"load"`, `"domcontentloaded"`, `"networkalmostidle"`, `"networkidle"`, `"settled"`, `"done"`. |
 | `page.screenshot([{ path, selector, fullPage, strip, url, timeout }])` | `path` is required: writes a PNG of the text layout. |
-| `page.evaluate(script[, { url, timeout, save }])` | Page-side JS escape hatch; returns text (JSON for objects/arrays). |
+| `await page.evaluate(script[, { url, timeout, save }])` | **Async — must be `await`ed.** Page-side JS escape hatch; resolves to text (JSON for objects/arrays). Several under one `Promise.all` wait on their page-side fetches and timers at the same time. |
 | `page.extract(schema)` | The only primitive returning a real JS value (object/array). The schema is its only argument. See schema below. |
 | `page.click(selector)` |  |
 | `page.fill(selector, value)` |  |
@@ -46,11 +46,12 @@ The script runs in its **own V8 context** — neither the page nor Node.js:
 | `page.press(selector, key)` | Selector first! `page.press("Enter")` binds "Enter" to `selector` and fails — use `page.press(null, "Enter")` or `page.press({ key: "Enter" })`. |
 | `page.selectOption(selector, value)` |  |
 | `page.setChecked(selector[, checked])` | `checked` defaults to `true`. |
+| `page.getCookies([{ url, all }])` | Returns an array of cookie objects for the page's host, HttpOnly ones included; `[]` when none match. |
 | `page.download([{ url, path }])` | Sends the session's cookies, so authenticated downloads work. Nothing is written unless the status is 200-203, and a failed download leaves `path` as it was. |
 | `page.callPageTool([{ name, arguments }])` | Runs a tool the page registered through WebMCP; returns its text result. |
-| `page.classify(questions[, { selector, presets }])` | Classifies page state or candidate elements via TypeSafe Jev: an array of categories, or an object of presets and questions. Replay calls Jev live and needs `TYPESAFE_API_KEY`. |
-| `page.acceptCookies([{ prefer, selectors }])` | Clicks the consent control Jev picks, then re-reads the page to check the banner went. Pass the `selectors` from an earlier result to click them with no model call; otherwise needs `TYPESAFE_API_KEY`. `prefer`: one of `"accept"`, `"reject"`. |
-| `page.login([{ password, username, usernameSelector, passwordSelector, submitSelector, nextSelector, decideOnly }])` | Fills the sign-in fields Jev picks and submits. Credentials go in as `$LP_*` placeholders. Pass the `*Selector` fields from an earlier result to replay with no model call; otherwise needs `TYPESAFE_API_KEY`. |
+| `page.classify(questions[, { selector, presets }])` | Classifies page state or candidate elements via a decision model (Gemini Decisions or TypeSafe Jev): an array of categories, or an object of presets and questions. Replay calls the model live and needs TYPESAFE_API_KEY, or GOOGLE_API_KEY/GEMINI_API_KEY with LIGHTPANDA_DECISION_PROVIDER=gemini. |
+| `page.acceptCookies([{ prefer, selectors }])` | Clicks the consent control the decision model picks, then re-reads the page to check the banner went. Pass the `selectors` from an earlier result to click them with no model call; otherwise needs TYPESAFE_API_KEY, or GOOGLE_API_KEY/GEMINI_API_KEY with LIGHTPANDA_DECISION_PROVIDER=gemini. `prefer`: one of `"accept"`, `"reject"`. |
+| `page.login([{ password, username, usernameSelector, passwordSelector, submitSelector, nextSelector, decideOnly }])` | Fills the sign-in fields the decision model picks and submits. Credentials go in as `$LP_*` placeholders. Pass the `*Selector` fields from an earlier result to replay with no model call; otherwise needs TYPESAFE_API_KEY, or GOOGLE_API_KEY/GEMINI_API_KEY with LIGHTPANDA_DECISION_PROVIDER=gemini. |
 
 Options (the trailing `{ … }` object; every option may be omitted):
 
@@ -61,6 +62,7 @@ Options (the trailing `{ … }` object; every option may be omitted):
 - `waitForSelector`: `timeout` — Optional timeout in milliseconds. Defaults to 5000, or 15000 when the page has not reached 'load' yet.
 - `waitForScript`: `timeout` — Optional timeout in milliseconds. Defaults to 5000, or 15000 when the page has not reached 'load' yet.
 - `waitForState`: `timeout` — Optional timeout in milliseconds. Defaults to 5000.
+- `getCookies`: `url` — Restrict output to cookies matching this URL's host. Defaults to the current page. An empty string is treated as omitted. `all` — If true, dump every cookie regardless of host. Overrides `url`.
 - `download`: `url` — Absolute http(s) URL to fetch. `path` — Relative path (no '..' segments) to save the response body to. Created or overwritten. The response reports the absolute location.
 - `callPageTool`: `name` — Tool name, as `pageTools` lists it. `arguments` — Optional. The tool's input, matching its `inputSchema`. Defaults to {}.
 - `classify`: `selector` — Optional CSS selector to classify a specific element subtree instead of the full page `presets` — Also ask every preset in the same call, each answered under its own name beside the questions. Needs the object form.
@@ -109,9 +111,9 @@ const { stories } = page.extract({
    return pages.map((p, i) => ({ ...items[i], ...p.extract({ /* schema */ }) }));
    ```
    - Concurrency is bounded by the HTTP connection pool: 40 total (`--http-max-concurrent`) and 6 per host (`--http-max-host-open`, the browser default — raising it much higher risks overwhelming the target server). Extra navigations queue rather than fail, so a same-site fan-out loads ~6 pages at a time. For long lists, fan out in batches and `page.close()` each page once read so its memory is reclaimed.
-   - `Promise.all` rejects the whole batch if any `goto` *fails* (a timeout does not reject); use `Promise.allSettled` when partial results are fine.
+   - `Promise.all` rejects the whole batch if any `goto` fails or times out; use `Promise.allSettled` when partial results are fine.
    - Walk **serially** on one page (`for (const it of items) { await page.goto(it.url); … }`) only when the steps depend on each other — each page decides the next URL, or they share login/session state.
-3. **`evaluate` is a last resort, not a reading tool.** A `querySelectorAll`-and-parse `page.evaluate` block is always wrong: lift the raw strings with `page.extract`, then trim/split/parse them in top-level JS. Reserve `page.evaluate` for behavior that must run inside the page and no builtin covers — and remember its state dies on every navigation/reload, while script variables persist.
+3. **`evaluate` is a last resort, not a reading tool.** A `querySelectorAll`-and-parse `page.evaluate` block is always wrong: lift the raw strings with `page.extract`, then trim/split/parse them in top-level JS. Reserve `page.evaluate` for behavior that must run inside the page and no builtin covers — and remember its state dies on every navigation/reload, while script variables persist. To run several page-side requests at once, `await Promise.all([page.evaluate(a), page.evaluate(b)])`.
 4. **Credentials via `$LP_*` placeholders** in any string argument (`page.fill("#pw", "$LP_HN_PASSWORD")`). Never inline a real secret; placeholders resolve inside the Lightpanda process.
 5. **Unique selectors.** Disambiguate with attributes/position: `input[type="submit"][value="login"]`, not `input[type="submit"]`.
 6. **Let failures fail.** Primitives throw on error and stop the script — only `try/catch` where you have a real fallback (e.g. optional cookie banner: `try { page.click("#accept") } catch {}`).
@@ -140,6 +142,7 @@ const { stories } = page.extract({
 | `page is not navigated or has been closed` | A method on a fresh `new Page()` (or a closed page) → `await page.goto(url)` first |
 | `page handle is no longer valid` | Used a page after a later `goto` on the **same** page replaced it → read it before navigating away. Sibling pages from other `new Page()` calls stay valid. |
 | `document is not defined` | DOM API in script context → use `page.extract` or `page.evaluate` |
+| `[object Promise]` where an evaluate result should be | `page.evaluate` is async → `await page.evaluate(...)` |
 | `require is not defined` | Not Node.js |
 | `no page loaded - run page.goto(url) first` | Page method before navigation |
 | `invalid arguments` | Wrong arity/shape, non-JSON value, or a field set both positionally and in options |
