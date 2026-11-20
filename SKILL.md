@@ -150,7 +150,7 @@ A `url` already loaded (current or originally requested) is read without reloadi
 
 An action that opens a new window, e.g. a `target=_blank` click, adds "Opened a new window; tools now act on it." to its result. A window opened later, after a fetch or a timer, does not become current: switch to it with the `popups` tool (State and debugging below).
 
-`classify`, `acceptCookies` and `login` ask TypeSafe System One (Jev) and need `TYPESAFE_API_KEY`, except `acceptCookies` and `login` given the selectors an earlier call returned (a recorded script replays with no model call). Without the key they fail with "<tool>: TYPESAFE_API_KEY environment variable is not set" (agent mode falls back to its chat model).
+`classify`, `acceptCookies` and `login` ask a decision model. `acceptCookies` and `login` skip it when given the selectors an earlier call returned, so a recorded script replays with no model call. The model needs `TYPESAFE_API_KEY`, or `GOOGLE_API_KEY`/`GEMINI_API_KEY` with `LIGHTPANDA_DECISION_PROVIDER=gemini`. Without a key, a call that asks it fails with "<tool>: no decision model key is set; set TYPESAFE_API_KEY, or GOOGLE_API_KEY/GEMINI_API_KEY with LIGHTPANDA_DECISION_PROVIDER=gemini". Agent mode falls back to its chat model.
 
 **Waiting:**
 - `waitForSelector` — Wait for a CSS selector to match
