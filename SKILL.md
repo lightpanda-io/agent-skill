@@ -93,6 +93,8 @@ claude mcp add lightpanda -- lightpanda mcp
 
 To respect `robots.txt`, append `--obey-robots` to the command.
 
+To keep unused tool definitions out of the context, expose only the tools you need with `--tools goto,tree,click` (`lightpanda mcp --list-tools` prints every name in that format). It is not a sandbox: a listed tool keeps its full reach.
+
 ### Setup for other MCP clients
 
 Add to your MCP client configuration:
