@@ -256,6 +256,7 @@ lightpanda serve --host 127.0.0.1 --port 9222
 Options:
 - `--cdp-max-connections` — Max simultaneous CDP connections (default: 16)
 - `--cdp-max-message-size` — Max incoming WebSocket message size (default: 1MB)
+- `--cdp-allow-timezone-override` — Let `Emulation.setTimezoneOverride` (e.g. Playwright's `timezoneId`) change the time zone. The zone is one per process, so every connection sees it; without the flag the command is accepted and ignored (use `--timezone` instead)
 - `--disable-metrics` — Disable the `/metrics` Prometheus endpoint
 - `--advertise-host` — Host to advertise in e.g. the `/json/version` response, useful when `--host` is `0.0.0.0`. It is also the one hostname, besides IP literals and `localhost`, that any request, WebSocket upgrades included, accepts in its `Host` header (e.g. a Docker service name); any other name gets a 403 and the log line `rejected request host`
 - `--remote-allow-origins <origin>`: accept this `Origin` header (or `*` for any) on CDP and BiDi WebSocket upgrades. Repeatable. By default an upgrade that sends an `Origin` header gets a 403 and the log line `rejected websocket origin`; upgrades without one are always accepted
