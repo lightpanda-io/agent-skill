@@ -217,6 +217,7 @@ lightpanda fetch --dump markdown --wait-until networkidle https://example.com
 - `--wait-script` — Wait for a JS expression to return truthy, checked after `--wait-until`
 - `--strip-mode` — Remove tag groups from output: `js`, `css`, `ui`, `invisible`, `shell`, `clutter` (comma-separated)
 - `--with-frames` — Include iframe contents in the dump
+- `--png-mode` — How `--dump png` draws the page: `layout` (default; boxes where the layout engine places them, at the `getBoundingClientRect` positions) or `reader` (the page's text in one readable column)
 - `--dump-selector`: Dump only the first element matching a CSS selector; fails if nothing matches
 - `--dump-max-bytes`: Soft cap on the dumped `html` or `markdown`; a `[truncated]` marker is appended
 - `--json` — Print fetch status as JSON instead of/alongside the dump; required when fetching multiple URLs
