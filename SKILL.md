@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: "Linux and macOS only (Windows via WSL2). Installs its own binary via scripts/install.sh — not run automatically by the plugin installer, so run it once before first use."
 allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/install.sh), Bash(command -v lightpanda), Bash(lightpanda *)
 metadata:
-  version: "2.1.5"
+  version: "2.1.6"
   author: Lightpanda
   source: "https://github.com/lightpanda-io/agent-skill"
   homepage: "https://github.com/lightpanda-io/agent-skill"
@@ -123,7 +123,7 @@ Where both `selector` and `backendNodeId` are accepted, either locates the targe
 A `url` already loaded (current or originally requested) is read without reloading; if a redirect or in-page navigation moved the page, the result opens with "The page is at <current>, not <url>: ..." (use `goto` to reload).
 - `markdown` — Get page content, or a subtree, as markdown
 - `html` — Raw HTML for the document, or a single node's outerHTML when scoped
-- `screenshot` — Render the page, or one node, as a PNG (the text layout Lightpanda computes, not a pixel-accurate rendering)
+- `screenshot` — Render the page, or one node, as a PNG, not a pixel-accurate rendering: `reader` mode (default) flows the text into one column, `layout` mode outlines each box where the page's layout places it, at the coordinates clicks use
 - `tree` — Simplified semantic DOM tree optimized for AI reasoning: role, name, value, and `backendNodeId` per node (supports `backendNodeId` filter and `maxDepth` limit). It doesn't enter frames: an iframe's value is its current URL; pass it as `url` to read the frame
 - `links` — Extract all links as text, resolved href, and `backendNodeId`
 - `nodeDetails` — Tag, role, name, attributes, and state for a node by `backendNodeId`, plus a ready-to-use CSS selector
@@ -217,6 +217,7 @@ lightpanda fetch --dump markdown --wait-until networkidle https://example.com
 - `--wait-script` — Wait for a JS expression to return truthy, checked after `--wait-until`
 - `--strip-mode` — Remove tag groups from output: `js`, `css`, `ui`, `invisible`, `shell`, `clutter` (comma-separated)
 - `--with-frames` — Include iframe contents in the dump
+- `--png-mode` — How `--dump png` draws the page: `layout` (default; boxes where the layout engine places them, at the `getBoundingClientRect` positions) or `reader` (the page's text in one readable column)
 - `--dump-selector`: Dump only the first element matching a CSS selector; fails if nothing matches
 - `--dump-max-bytes`: Soft cap on the dumped `html` or `markdown`; a `[truncated]` marker is appended
 - `--json` — Print fetch status as JSON instead of/alongside the dump; required when fetching multiple URLs
@@ -255,6 +256,7 @@ lightpanda serve --host 127.0.0.1 --port 9222
 Options:
 - `--cdp-max-connections` — Max simultaneous CDP connections (default: 16)
 - `--cdp-max-message-size` — Max incoming WebSocket message size (default: 1MB)
+- `--cdp-allow-timezone-override` — Let `Emulation.setTimezoneOverride` (e.g. Playwright's `timezoneId`) change the time zone. The zone is one per process, so every connection sees it; without the flag the command is accepted and ignored (use `--timezone` instead)
 - `--disable-metrics` — Disable the `/metrics` Prometheus endpoint
 - `--advertise-host` — Host to advertise in e.g. the `/json/version` response, useful when `--host` is `0.0.0.0`. It is also the one hostname, besides IP literals and `localhost`, that any request, WebSocket upgrades included, accepts in its `Host` header (e.g. a Docker service name); any other name gets a 403 and the log line `rejected request host`
 - `--remote-allow-origins <origin>`: accept this `Origin` header (or `*` for any) on CDP and BiDi WebSocket upgrades. Repeatable. By default an upgrade that sends an `Origin` header gets a 403 and the log line `rejected websocket origin`; upgrades without one are always accepted
@@ -318,7 +320,7 @@ Lightpanda exposes a custom `LP` domain via CDP with agent-optimized methods not
 
 **Interactive elements:**
 - `LP.getInteractiveElements` — Find all interactive elements. Params: `nodeId` (optional)
-- `LP.detectForms` — Detect and extract form information
+- `LP.detectForms` — Detect and extract form information. Params: `includeValidation` (adds each field's non-empty `validationMessage`, e.g. a site's `setCustomValidity()` text, without firing `invalid` events)
 - `LP.getNodeDetails` — Get detailed info about a node. Params: `backendNodeId` (required)
 - `LP.waitForSelector` — Wait for a CSS selector match. Params: `selector` (required), `timeout` (default: 5000 ms, or 15000 ms before the page reaches `load`)
 - `LP.waitUntil`: wait for a load state with no navigation, the same states as `--wait-until` (`settled` included). Params: `until` (required), `timeout` (same default as `LP.waitForSelector`); fails with `Timeout`
@@ -357,6 +359,8 @@ await client.send('LP.clickNode', { backendNodeId });
 ## WebDriver Classic and BiDi (Selenium, Puppeteer)
 
 `lightpanda serve --protocol webdriver` serves classic WebDriver (HTTP, `POST /session`) and WebDriver BiDi (WebSocket at `/session`; with Selenium, request it through the `webSocketUrl: true` capability). Point Selenium at `http://127.0.0.1:9222`, or Puppeteer at `ws://127.0.0.1:9222/session` with `protocol: 'webDriverBiDi'`. Local only, and coverage of both specs is partial: see the [Selenium guide](https://lightpanda.io/docs/usage/bidi/selenium).
+
+Dialogs don't block, so the standard BiDi `browsingContext.handleUserPrompt` always fails with `no such alert`. Send the extension command `lp:browsingContext.handleUserPrompt` (same params: `context`, `accept`, `userText`) *before* the action that opens the dialog; the next dialog uses that answer.
 
 ## Lightpanda Cloud
 
@@ -409,8 +413,8 @@ Accepted by every command (`fetch`, `serve`, `mcp`, `agent`, `run`), not only wh
 - `--load-resources <type>`: sub-resources to actually request (`beacon`, `iframe`, `image`, `stylesheet`, `worker`; `none` requests none). Repeatable. Nothing is requested by default, except that `mcp` and `agent` load external stylesheets so visibility checks see the CSS; passing the flag replaces that default.
 
 **State:**
-- `--cookie <file>`: load cookies at startup, from a JSON array in the CDP/Puppeteer format or a Netscape `cookies.txt` (`serve`, `fetch` and `mcp`).
-- `--cookie-jar <file>`: write the cookies to a JSON file on exit (`fetch` and `mcp`), or when a CDP browser context closes (`serve`; with several clients, the last to close wins). `agent` ignores both flags.
+- `--cookie <file>`: load cookies at startup, from a JSON array in the CDP/Puppeteer format or a Netscape `cookies.txt` (`serve`, `fetch`, `mcp` and `agent`).
+- `--cookie-jar <file>`: write the cookies to a JSON file on exit (`fetch`, `mcp` and `agent`), or when a CDP browser context closes (`serve`; with several clients, the last to close wins). `run` ignores both flags.
 
 **Security:** `--block-private-networks`: block HTTP requests to private/internal IP addresses after DNS resolution. Defaults to false.
 
