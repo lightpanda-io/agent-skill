@@ -123,7 +123,7 @@ Where both `selector` and `backendNodeId` are accepted, either locates the targe
 A `url` already loaded (current or originally requested) is read without reloading; if a redirect or in-page navigation moved the page, the result opens with "The page is at <current>, not <url>: ..." (use `goto` to reload).
 - `markdown` — Get page content, or a subtree, as markdown
 - `html` — Raw HTML for the document, or a single node's outerHTML when scoped
-- `screenshot` — Render the page, or one node, as a PNG (the text layout Lightpanda computes, not a pixel-accurate rendering)
+- `screenshot` — Render the page, or one node, as a PNG, not a pixel-accurate rendering: `reader` mode (default) flows the text into one column, `layout` mode outlines each box where the page's layout places it, at the coordinates clicks use
 - `tree` — Simplified semantic DOM tree optimized for AI reasoning: role, name, value, and `backendNodeId` per node (supports `backendNodeId` filter and `maxDepth` limit). It doesn't enter frames: an iframe's value is its current URL; pass it as `url` to read the frame
 - `links` — Extract all links as text, resolved href, and `backendNodeId`
 - `nodeDetails` — Tag, role, name, attributes, and state for a node by `backendNodeId`, plus a ready-to-use CSS selector
