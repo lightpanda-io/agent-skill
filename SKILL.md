@@ -318,7 +318,7 @@ Lightpanda exposes a custom `LP` domain via CDP with agent-optimized methods not
 
 **Interactive elements:**
 - `LP.getInteractiveElements` — Find all interactive elements. Params: `nodeId` (optional)
-- `LP.detectForms` — Detect and extract form information
+- `LP.detectForms` — Detect and extract form information. Params: `includeValidation` (adds each field's non-empty `validationMessage`, e.g. a site's `setCustomValidity()` text, without firing `invalid` events)
 - `LP.getNodeDetails` — Get detailed info about a node. Params: `backendNodeId` (required)
 - `LP.waitForSelector` — Wait for a CSS selector match. Params: `selector` (required), `timeout` (default: 5000 ms, or 15000 ms before the page reaches `load`)
 - `LP.waitUntil`: wait for a load state with no navigation, the same states as `--wait-until` (`settled` included). Params: `until` (required), `timeout` (same default as `LP.waitForSelector`); fails with `Timeout`
