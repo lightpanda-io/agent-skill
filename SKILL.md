@@ -413,8 +413,8 @@ Accepted by every command (`fetch`, `serve`, `mcp`, `agent`, `run`), not only wh
 - `--load-resources <type>`: sub-resources to actually request (`beacon`, `iframe`, `image`, `stylesheet`, `worker`; `none` requests none). Repeatable. Nothing is requested by default, except that `mcp` and `agent` load external stylesheets so visibility checks see the CSS; passing the flag replaces that default.
 
 **State:**
-- `--cookie <file>`: load cookies at startup, from a JSON array in the CDP/Puppeteer format or a Netscape `cookies.txt` (`serve`, `fetch` and `mcp`).
-- `--cookie-jar <file>`: write the cookies to a JSON file on exit (`fetch` and `mcp`), or when a CDP browser context closes (`serve`; with several clients, the last to close wins). `agent` ignores both flags.
+- `--cookie <file>`: load cookies at startup, from a JSON array in the CDP/Puppeteer format or a Netscape `cookies.txt` (`serve`, `fetch`, `mcp` and `agent`).
+- `--cookie-jar <file>`: write the cookies to a JSON file on exit (`fetch`, `mcp` and `agent`), or when a CDP browser context closes (`serve`; with several clients, the last to close wins). `run` ignores both flags.
 
 **Security:** `--block-private-networks`: block HTTP requests to private/internal IP addresses after DNS resolution. Defaults to false.
 
