@@ -360,6 +360,8 @@ await client.send('LP.clickNode', { backendNodeId });
 
 `lightpanda serve --protocol webdriver` serves classic WebDriver (HTTP, `POST /session`) and WebDriver BiDi (WebSocket at `/session`; with Selenium, request it through the `webSocketUrl: true` capability). Point Selenium at `http://127.0.0.1:9222`, or Puppeteer at `ws://127.0.0.1:9222/session` with `protocol: 'webDriverBiDi'`. Local only, and coverage of both specs is partial: see the [Selenium guide](https://lightpanda.io/docs/usage/bidi/selenium).
 
+Dialogs don't block, so the standard BiDi `browsingContext.handleUserPrompt` always fails with `no such alert`. Send the extension command `lp:browsingContext.handleUserPrompt` (same params: `context`, `accept`, `userText`) *before* the action that opens the dialog; the next dialog uses that answer.
+
 ## Lightpanda Cloud
 
 Hosted Lightpanda, no local binary: use it when the agent can't install software or keep a process running, or needs managed proxies. Get a token at [console.lightpanda.io](https://console.lightpanda.io/signup), pick the `euwest` or `uswest` region, then connect:
